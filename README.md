@@ -11,7 +11,7 @@ therefore accept and return explicit Pydantic models rather than free-form
 text. This makes results machine-readable, rejectable when malformed, and
 testable without calling an AI service.
 
-## Current milestone: domain contract
+## Current milestone: deterministic provider
 
 The repository currently defines:
 
@@ -20,9 +20,13 @@ The repository currently defines:
 - Priority, preconditions, numbered steps, and expected results
 - Traceability from each test case back to requirements
 - Validation for unknown fields, duplicate IDs, and invalid step numbering
+- A provider interface that keeps generation backends interchangeable
+- A deterministic fake provider for offline development and testing
 
-The next milestone will add the generation service behind an interchangeable
-provider interface.
+The fake provider intentionally uses fixed templates rather than simulating AI
+quality. Its purpose is to exercise the application workflow reliably. The
+next milestone will add a service layer and the prompt boundary used by real
+model providers.
 
 ## Example
 
@@ -56,10 +60,9 @@ pytest
 
 ## Planned milestones
 
-1. Domain contract and validation (current)
-2. Deterministic fake AI provider
+1. Domain contract and validation (complete)
+2. Deterministic fake AI provider (current)
 3. Test-case generation service and prompt boundary
 4. Command-line interface
 5. OpenAI provider integration
 6. Evaluation dataset, CI, and portfolio documentation
-

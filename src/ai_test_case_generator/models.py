@@ -38,6 +38,22 @@ class UserStory(StrictModel):
     acceptance_criteria: list[str] = Field(default_factory=list)
 
 
+class GenerationRequest(StrictModel):
+    """A user story plus the categories requested from a provider."""
+
+    story: UserStory
+    categories: list[TestCategory] = Field(
+        default_factory=lambda: list(TestCategory),
+        min_length=1,
+    )
+
+    @model_validator(mode="after")
+    def categories_are_unique(self) -> Self:
+        if len(self.categories) != len(set(self.categories)):
+            raise ValueError("requested categories must be unique")
+        return self
+
+
 class TestStep(StrictModel):
     """One action and its observable expected result."""
 
@@ -81,4 +97,3 @@ class TestSuite(StrictModel):
         if len(ids) != len(set(ids)):
             raise ValueError("test case IDs must be unique")
         return self
-
