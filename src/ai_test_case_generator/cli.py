@@ -12,9 +12,15 @@ from pydantic import ValidationError
 from ai_test_case_generator.models import GenerationRequest
 from ai_test_case_generator.providers import (
     FakeTestCaseProvider,
+    OllamaTestCaseProvider,
     OpenAITestCaseProvider,
     ProviderError,
     TestCaseProvider,
+)
+from ai_test_case_generator.providers.ollama import (
+    DEFAULT_OLLAMA_BASE_URL,
+    DEFAULT_OLLAMA_MODEL,
+    DEFAULT_OLLAMA_TIMEOUT_SECONDS,
 )
 from ai_test_case_generator.providers.openai import (
     DEFAULT_OPENAI_MODEL,
@@ -53,14 +59,31 @@ def build_parser() -> argparse.ArgumentParser:
     )
     generate.add_argument(
         "--provider",
-        choices=("fake", "openai"),
+        choices=("fake", "ollama", "openai"),
         default="fake",
         help="Generation backend (default: fake).",
     )
     generate.add_argument(
         "--model",
-        default=DEFAULT_OPENAI_MODEL,
-        help=f"OpenAI model (default: {DEFAULT_OPENAI_MODEL}).",
+        default=None,
+        help=(
+            "Provider model override "
+            f"(Ollama: {DEFAULT_OLLAMA_MODEL}; OpenAI: {DEFAULT_OPENAI_MODEL})."
+        ),
+    )
+    generate.add_argument(
+        "--ollama-url",
+        default=DEFAULT_OLLAMA_BASE_URL,
+        help=f"Ollama server URL (default: {DEFAULT_OLLAMA_BASE_URL}).",
+    )
+    generate.add_argument(
+        "--ollama-timeout",
+        type=float,
+        default=DEFAULT_OLLAMA_TIMEOUT_SECONDS,
+        help=(
+            "Seconds to wait for local generation "
+            f"(default: {DEFAULT_OLLAMA_TIMEOUT_SECONDS:g})."
+        ),
     )
     generate.add_argument(
         "--reasoning-effort",
@@ -88,6 +111,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 output_path=args.output,
                 provider_name=args.provider,
                 model=args.model,
+                ollama_url=args.ollama_url,
+                ollama_timeout=args.ollama_timeout,
                 reasoning_effort=args.reasoning_effort,
                 force=args.force,
             )
@@ -109,7 +134,9 @@ def _generate(
     input_path: Path,
     output_path: Path,
     provider_name: str,
-    model: str,
+    model: str | None,
+    ollama_url: str,
+    ollama_timeout: float,
     reasoning_effort: str,
     force: bool,
 ) -> None:
@@ -121,6 +148,8 @@ def _generate(
     provider = _make_provider(
         provider_name,
         model=model,
+        ollama_url=ollama_url,
+        ollama_timeout=ollama_timeout,
         reasoning_effort=reasoning_effort,
     )
     service = GenerationService(provider)
@@ -147,11 +176,19 @@ def _generate(
 def _make_provider(
     name: str,
     *,
-    model: str,
+    model: str | None,
+    ollama_url: str,
+    ollama_timeout: float,
     reasoning_effort: str,
 ) -> TestCaseProvider:
     if name == "fake":
         return FakeTestCaseProvider()
+    if name == "ollama":
+        return OllamaTestCaseProvider(
+            model=model or DEFAULT_OLLAMA_MODEL,
+            base_url=ollama_url,
+            timeout=ollama_timeout,
+        )
     if name == "openai":
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
@@ -160,7 +197,7 @@ def _make_provider(
             )
         return OpenAITestCaseProvider(
             api_key=api_key,
-            model=model,
+            model=model or DEFAULT_OPENAI_MODEL,
             reasoning_effort=reasoning_effort,
         )
     raise CliError(f"unknown provider: {name}")

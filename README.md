@@ -11,7 +11,7 @@ therefore accept and return explicit Pydantic models rather than free-form
 text. This makes results machine-readable, rejectable when malformed, and
 testable without calling an AI service.
 
-## Current milestone: OpenAI provider (mock-tested)
+## Current milestone: Local and hosted model providers
 
 The repository currently defines:
 
@@ -25,6 +25,7 @@ The repository currently defines:
 - A strict service that rejects semantically incorrect provider responses
 - A safe command-line workflow using versionable JSON request and result files
 - An opt-in OpenAI Responses provider using Pydantic Structured Outputs
+- An opt-in Ollama provider for private, per-call-free local generation
 
 The fake provider intentionally uses fixed templates rather than simulating AI
 quality. Its purpose is to exercise the application workflow reliably. The
@@ -65,6 +66,35 @@ The key must not be committed. The CLI prints reported token usage after a live
 request so cost can be monitored. Automated tests inject a mock client and never
 contact the OpenAI API.
 
+## Ollama provider
+
+The Ollama provider calls a model running on your computer at
+`http://127.0.0.1:11434`. It sends the Pydantic JSON Schema to Ollama and then
+validates the returned JSON again before the service accepts it. No API key is
+required, and no per-call provider fee is charged.
+
+Install Ollama, download the default instruction-following model, and ensure the
+local server is running:
+
+```powershell
+ollama pull qwen3:4b-instruct
+ollama serve
+```
+
+Then generate a suite:
+
+```powershell
+ai-test-cases generate `
+  --input examples/password_reset_request.json `
+  --output password_reset_suite.json `
+  --provider ollama
+```
+
+Use `--model` to select another installed model, `--ollama-url` to connect to
+an Ollama server at a different address, or `--ollama-timeout` when slower
+hardware needs longer than the 300-second default. Automated tests use a fake
+HTTP transport and do not require Ollama or a downloaded model.
+
 ## Example
 
 ```python
@@ -102,4 +132,5 @@ pytest
 3. Strict test-case generation service (complete)
 4. File-based command-line interface (complete)
 5. OpenAI provider integration (mock-tested; live test deferred)
-6. Evaluation dataset, CI, and portfolio documentation
+6. Local Ollama provider integration (complete)
+7. Evaluation dataset, CI, and portfolio documentation

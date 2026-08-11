@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from ai_test_case_generator.cli import main
+from ai_test_case_generator.cli import _make_provider, main
 from ai_test_case_generator.models import TestSuite as SuiteModel
 
 
@@ -151,3 +151,22 @@ def test_openai_provider_requires_an_explicit_api_key(
     assert exit_code == 2
     assert not output_path.exists()
     assert "OPENAI_API_KEY is not set" in capsys.readouterr().err
+
+
+def test_ollama_provider_uses_local_defaults_without_an_api_key(
+    monkeypatch,
+) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    provider = _make_provider(
+        "ollama",
+        model=None,
+        ollama_url="http://localhost:11434",
+        ollama_timeout=300,
+        reasoning_effort="low",
+    )
+
+    assert provider.name == "ollama"
+    assert provider.model == "qwen3:4b-instruct"
+    assert provider.base_url == "http://localhost:11434"
+    assert provider.timeout == 300

@@ -12,7 +12,7 @@ class ProviderError(RuntimeError):
 
 @dataclass(frozen=True)
 class TokenUsage:
-    """Token counts reported by a metered provider."""
+    """Token counts reported by a model provider."""
 
     input_tokens: int
     output_tokens: int
