@@ -11,7 +11,7 @@ therefore accept and return explicit Pydantic models rather than free-form
 text. This makes results machine-readable, rejectable when malformed, and
 testable without calling an AI service.
 
-## Current milestone: deterministic provider
+## Current milestone: guarded generation service
 
 The repository currently defines:
 
@@ -22,11 +22,12 @@ The repository currently defines:
 - Validation for unknown fields, duplicate IDs, and invalid step numbering
 - A provider interface that keeps generation backends interchangeable
 - A deterministic fake provider for offline development and testing
+- A strict service that rejects semantically incorrect provider responses
 
 The fake provider intentionally uses fixed templates rather than simulating AI
 quality. Its purpose is to exercise the application workflow reliably. The
-next milestone will add a service layer and the prompt boundary used by real
-model providers.
+service also rejects a mismatched story ID, missing requested categories, and
+unrequested categories instead of silently repairing model output.
 
 ## Example
 
@@ -61,8 +62,8 @@ pytest
 ## Planned milestones
 
 1. Domain contract and validation (complete)
-2. Deterministic fake AI provider (current)
-3. Test-case generation service and prompt boundary
+2. Deterministic fake AI provider (complete)
+3. Strict test-case generation service (current)
 4. Command-line interface
 5. OpenAI provider integration
 6. Evaluation dataset, CI, and portfolio documentation
