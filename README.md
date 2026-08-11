@@ -11,7 +11,7 @@ therefore accept and return explicit Pydantic models rather than free-form
 text. This makes results machine-readable, rejectable when malformed, and
 testable without calling an AI service.
 
-## Current milestone: guarded generation service
+## Current milestone: file-based CLI
 
 The repository currently defines:
 
@@ -23,11 +23,26 @@ The repository currently defines:
 - A provider interface that keeps generation backends interchangeable
 - A deterministic fake provider for offline development and testing
 - A strict service that rejects semantically incorrect provider responses
+- A safe command-line workflow using versionable JSON request and result files
 
 The fake provider intentionally uses fixed templates rather than simulating AI
 quality. Its purpose is to exercise the application workflow reliably. The
 service also rejects a mismatched story ID, missing requested categories, and
 unrequested categories instead of silently repairing model output.
+
+## Generate test cases
+
+After completing the local setup, run:
+
+```powershell
+ai-test-cases generate `
+  --input examples/password_reset_request.json `
+  --output password_reset_suite.json `
+  --provider fake
+```
+
+The fake provider is the default, so `--provider fake` is optional. The command
+refuses to replace an existing output file unless `--force` is supplied.
 
 ## Example
 
@@ -63,7 +78,7 @@ pytest
 
 1. Domain contract and validation (complete)
 2. Deterministic fake AI provider (complete)
-3. Strict test-case generation service (current)
-4. Command-line interface
+3. Strict test-case generation service (complete)
+4. File-based command-line interface (current)
 5. OpenAI provider integration
 6. Evaluation dataset, CI, and portfolio documentation

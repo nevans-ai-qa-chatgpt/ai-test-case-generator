@@ -1,0 +1,127 @@
+import json
+from pathlib import Path
+
+from ai_test_case_generator.cli import main
+from ai_test_case_generator.models import TestSuite as SuiteModel
+
+
+def write_request(path: Path, categories: list[str] | None = None) -> None:
+    request = {
+        "story": {
+            "id": "US-001",
+            "title": "Reset a forgotten password",
+            "narrative": "As a user, I want to reset my password to regain access.",
+        },
+        "categories": categories or ["functional", "negative", "edge"],
+    }
+    path.write_text(json.dumps(request), encoding="utf-8")
+
+
+def test_generate_writes_a_valid_suite(tmp_path: Path) -> None:
+    input_path = tmp_path / "request.json"
+    output_path = tmp_path / "suite.json"
+    write_request(input_path)
+
+    exit_code = main(
+        [
+            "generate",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    suite = SuiteModel.model_validate_json(output_path.read_text(encoding="utf-8"))
+    assert exit_code == 0
+    assert suite.source_story_id == "US-001"
+    assert len(suite.test_cases) == 3
+
+
+def test_generate_respects_requested_categories(tmp_path: Path) -> None:
+    input_path = tmp_path / "request.json"
+    output_path = tmp_path / "suite.json"
+    write_request(input_path, categories=["edge"])
+
+    exit_code = main(
+        [
+            "generate",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    output = json.loads(output_path.read_text(encoding="utf-8"))
+    assert exit_code == 0
+    assert [case["category"] for case in output["test_cases"]] == ["edge"]
+
+
+def test_existing_output_is_not_replaced_without_force(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    input_path = tmp_path / "request.json"
+    output_path = tmp_path / "suite.json"
+    write_request(input_path)
+    output_path.write_text("keep me", encoding="utf-8")
+
+    exit_code = main(
+        [
+            "generate",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    assert exit_code == 2
+    assert output_path.read_text(encoding="utf-8") == "keep me"
+    assert "use --force" in capsys.readouterr().err
+
+
+def test_force_replaces_an_existing_output(tmp_path: Path) -> None:
+    input_path = tmp_path / "request.json"
+    output_path = tmp_path / "suite.json"
+    write_request(input_path)
+    output_path.write_text("replace me", encoding="utf-8")
+
+    exit_code = main(
+        [
+            "generate",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+            "--force",
+        ]
+    )
+
+    assert exit_code == 0
+    SuiteModel.model_validate_json(output_path.read_text(encoding="utf-8"))
+
+
+def test_invalid_request_returns_a_user_readable_error(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    input_path = tmp_path / "request.json"
+    output_path = tmp_path / "suite.json"
+    input_path.write_text('{"story": {}}', encoding="utf-8")
+
+    exit_code = main(
+        [
+            "generate",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+        ]
+    )
+
+    assert exit_code == 2
+    assert not output_path.exists()
+    assert "validation errors for GenerationRequest" in capsys.readouterr().err
+
