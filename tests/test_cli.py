@@ -125,3 +125,29 @@ def test_invalid_request_returns_a_user_readable_error(
     assert not output_path.exists()
     assert "validation errors for GenerationRequest" in capsys.readouterr().err
 
+
+def test_openai_provider_requires_an_explicit_api_key(
+    tmp_path: Path,
+    capsys,
+    monkeypatch,
+) -> None:
+    input_path = tmp_path / "request.json"
+    output_path = tmp_path / "suite.json"
+    write_request(input_path)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    exit_code = main(
+        [
+            "generate",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+            "--provider",
+            "openai",
+        ]
+    )
+
+    assert exit_code == 2
+    assert not output_path.exists()
+    assert "OPENAI_API_KEY is not set" in capsys.readouterr().err

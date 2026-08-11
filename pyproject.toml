@@ -9,6 +9,7 @@ description = "Generate structured, validated test cases from user stories"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "openai>=2.0,<3",
     "pydantic>=2.11,<3",
 ]
 
