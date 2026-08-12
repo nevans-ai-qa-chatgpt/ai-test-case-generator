@@ -32,6 +32,10 @@ quality. Its purpose is to exercise the application workflow reliably. The
 service also rejects a mismatched story ID, missing requested categories, and
 unrequested categories instead of silently repairing model output.
 
+Model-backed output is also reviewed against the grounding and executability
+rubric in [`evals/README.md`](evals/README.md). Prompt changes are versioned and
+compared against preserved outputs from the same representative requests.
+
 ## Generate test cases
 
 After completing the local setup, run:

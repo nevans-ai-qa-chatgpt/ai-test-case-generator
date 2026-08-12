@@ -1,0 +1,39 @@
+from ai_test_case_generator.models import GenerationRequest, UserStory
+from ai_test_case_generator.prompts import (
+    PROMPT_VERSION,
+    SYSTEM_PROMPT,
+    build_user_prompt,
+)
+
+
+def test_prompt_version_changes_when_generation_instructions_change() -> None:
+    assert PROMPT_VERSION == "1.2"
+
+
+def test_system_prompt_contains_measured_quality_guards() -> None:
+    normalized_prompt = " ".join(SYSTEM_PROMPT.split())
+
+    assert "only authoritative evidence" in normalized_prompt
+    assert "Do not invent numeric limits" in normalized_prompt
+    assert "does not imply identical backend actions" in normalized_prompt
+    assert "negative cases cover invalid or rejected behavior" in normalized_prompt
+    assert "edge cases cover boundaries or state transitions" in normalized_prompt
+    assert "Use explicit preconditions" in normalized_prompt
+
+
+def test_user_prompt_identifies_the_version_and_preserves_request_data() -> None:
+    request = GenerationRequest(
+        story=UserStory(
+            id="US-001",
+            title="Reset a password",
+            narrative="As a user, I want to reset my password.",
+        )
+    )
+
+    prompt = build_user_prompt(request)
+
+    assert "Prompt version: 1.2" in prompt
+    assert '"id": "US-001"' in prompt
+    assert "completion checks" in prompt
+    assert "does not mean an unregistered address receives a link" in prompt
+    assert "Invalid input is negative" in prompt

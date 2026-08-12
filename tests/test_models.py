@@ -87,3 +87,38 @@ def test_documented_example_matches_the_domain_contract() -> None:
     suite = SuiteModel.model_validate(example["example_output"])
 
     assert suite.source_story_id == story.id
+
+
+def test_evaluation_baseline_matches_the_domain_contract() -> None:
+    baseline_path = (
+        Path(__file__).parents[1]
+        / "evals"
+        / "baselines"
+        / "password_reset_prompt_v1.0.json"
+    )
+
+    suite = SuiteModel.model_validate_json(
+        baseline_path.read_text(encoding="utf-8")
+    )
+
+    assert suite.source_story_id == "US-001"
+    assert len(suite.test_cases) == 6
+
+
+@pytest.mark.parametrize(
+    "filename",
+    [
+        "password_reset_prompt_v1.1.json",
+        "password_reset_prompt_v1.2.json",
+    ],
+)
+def test_evaluation_experiment_matches_the_domain_contract(filename: str) -> None:
+    experiment_path = (
+        Path(__file__).parents[1] / "evals" / "experiments" / filename
+    )
+
+    suite = SuiteModel.model_validate_json(
+        experiment_path.read_text(encoding="utf-8")
+    )
+
+    assert suite.source_story_id == "US-001"
