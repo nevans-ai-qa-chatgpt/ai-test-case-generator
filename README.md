@@ -11,7 +11,7 @@ therefore accept and return explicit Pydantic models rather than free-form
 text. This makes results machine-readable, rejectable when malformed, and
 testable without calling an AI service.
 
-## Current milestone: Representative evaluation dataset
+## Current milestone: Resumable evaluation runner
 
 The repository currently defines:
 
@@ -28,6 +28,8 @@ The repository currently defines:
 - An opt-in Ollama provider for private, per-call-free local generation
 - A versioned eight-case evaluation dataset with an independent review rubric
 - Offline dataset validation that makes no model calls
+- Sequential evaluation runs that preserve progress across failures and stops
+- Per-case suites, quality reports, timing, token usage, and status artifacts
 
 The fake provider intentionally uses fixed templates rather than simulating AI
 quality. Its purpose is to exercise the application workflow reliably. The
@@ -46,6 +48,29 @@ ai-test-cases validate-evals --dataset evals/dataset.json
 
 This checks structure, identifiers, requested categories, and review metadata;
 it does not generate test cases, use tokens, or incur an API charge.
+
+Smoke-test the complete runner without loading a model:
+
+```powershell
+ai-test-cases run-evals `
+  --dataset evals/dataset.json `
+  --output-dir "$env:TEMP\ai-test-case-generator-fake-smoke"
+```
+
+Run the dataset against local Ollama by changing the provider and using a new
+output directory:
+
+```powershell
+ai-test-cases run-evals `
+  --dataset evals/dataset.json `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.2 `
+  --provider ollama
+```
+
+Results are saved after every case. Repeating the command skips completed cases
+and retries failed or interrupted ones. `--case EVAL-001` limits an invocation
+to one case; repeat the option to select multiple cases. See
+[`evals/README.md`](evals/README.md) for artifact layout and safety rules.
 
 ## Generate test cases
 
@@ -172,5 +197,6 @@ pytest
 5. OpenAI provider integration (mock-tested; live test deferred)
 6. Local Ollama provider integration (complete)
 7. Representative evaluation dataset (complete)
-8. Resumable evaluation runner and cross-case quality calibration
-9. CI and portfolio documentation
+8. Resumable evaluation runner (complete)
+9. Cross-case quality calibration
+10. CI and portfolio documentation

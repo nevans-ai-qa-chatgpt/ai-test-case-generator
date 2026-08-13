@@ -27,6 +27,38 @@ Run one model configuration at a time so differences can be attributed to a
 controlled change. The current password-reset artifacts predate this dataset
 layout and remain as historical evidence.
 
+## Resumable runs
+
+Use `run-evals` to process cases sequentially and save each result immediately.
+Start with the fake provider to verify the workflow without loading a model:
+
+```powershell
+ai-test-cases run-evals `
+  --dataset evals/dataset.json `
+  --output-dir "$env:TEMP\ai-test-case-generator-fake-smoke"
+```
+
+For the default local model, use a separate output directory named for the
+configuration:
+
+```powershell
+ai-test-cases run-evals `
+  --dataset evals/dataset.json `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.2 `
+  --provider ollama
+```
+
+The runner creates an immutable `run.json` manifest and then writes
+`suite.json`, `quality.json`, and `result.json` under `cases/EVAL-NNN/`. A
+second invocation with the same command skips completed cases and retries
+failed or interrupted cases. Pressing Ctrl+C is therefore safe after earlier
+cases have completed.
+
+Use `--case EVAL-001` to run a single case. Repeat `--case` to select several.
+Use `--force` only when you intentionally want to replace completed results.
+Changing the dataset, provider, model, prompt version, or relevant provider
+settings requires a new output directory so experiment results cannot be mixed.
+
 ## Review rubric
 
 Evaluate each generated suite on five dimensions:

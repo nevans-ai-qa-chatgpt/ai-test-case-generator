@@ -255,3 +255,49 @@ def test_validate_evals_rejects_an_invalid_dataset(
 
     assert exit_code == 2
     assert "validation error" in capsys.readouterr().err
+
+
+def test_run_evals_can_select_and_resume_a_case(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    dataset_path = Path(__file__).parents[1] / "evals" / "dataset.json"
+    output_dir = tmp_path / "fake-run"
+    command = [
+        "run-evals",
+        "--dataset",
+        str(dataset_path),
+        "--output-dir",
+        str(output_dir),
+        "--case",
+        "EVAL-001",
+    ]
+
+    first_exit_code = main(command)
+    first_output = capsys.readouterr().out
+    second_exit_code = main(command)
+    second_output = capsys.readouterr().out
+
+    assert first_exit_code == 0
+    assert "completed=1, skipped=0, failed=0" in first_output
+    assert second_exit_code == 0
+    assert "completed=0, skipped=1, failed=0" in second_output
+
+
+def test_run_evals_rejects_an_unknown_case(tmp_path: Path, capsys) -> None:
+    dataset_path = Path(__file__).parents[1] / "evals" / "dataset.json"
+
+    exit_code = main(
+        [
+            "run-evals",
+            "--dataset",
+            str(dataset_path),
+            "--output-dir",
+            str(tmp_path / "run"),
+            "--case",
+            "EVAL-999",
+        ]
+    )
+
+    assert exit_code == 2
+    assert "unknown evaluation case ID" in capsys.readouterr().err

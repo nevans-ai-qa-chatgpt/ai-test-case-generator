@@ -1,6 +1,7 @@
 """Command-line interface for the test-case generator."""
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -11,6 +12,11 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from ai_test_case_generator.evaluation import load_evaluation_dataset
+from ai_test_case_generator.evaluation_runner import (
+    EvaluationRunError,
+    EvaluationRunner,
+    EvaluationRunSummary,
+)
 from ai_test_case_generator.models import GenerationRequest
 from ai_test_case_generator.providers import (
     FakeTestCaseProvider,
@@ -115,6 +121,68 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Path to an EvaluationDataset JSON file.",
     )
+
+    run_evals = subparsers.add_parser(
+        "run-evals",
+        help="Run evaluation cases sequentially with resumable output.",
+    )
+    run_evals.add_argument(
+        "--dataset",
+        type=Path,
+        required=True,
+        help="Path to an EvaluationDataset JSON file.",
+    )
+    run_evals.add_argument(
+        "--output-dir",
+        type=Path,
+        required=True,
+        help="Dedicated directory for one model and prompt configuration.",
+    )
+    run_evals.add_argument(
+        "--case",
+        dest="case_ids",
+        action="append",
+        help="Run only this evaluation ID; repeat to select multiple cases.",
+    )
+    run_evals.add_argument(
+        "--provider",
+        choices=("fake", "ollama", "openai"),
+        default="fake",
+        help="Generation backend (default: fake).",
+    )
+    run_evals.add_argument(
+        "--model",
+        default=None,
+        help=(
+            "Provider model override "
+            f"(Ollama: {DEFAULT_OLLAMA_MODEL}; OpenAI: {DEFAULT_OPENAI_MODEL})."
+        ),
+    )
+    run_evals.add_argument(
+        "--ollama-url",
+        default=DEFAULT_OLLAMA_BASE_URL,
+        help=f"Ollama server URL (default: {DEFAULT_OLLAMA_BASE_URL}).",
+    )
+    run_evals.add_argument(
+        "--ollama-timeout",
+        type=float,
+        default=DEFAULT_OLLAMA_TIMEOUT_SECONDS,
+        help=(
+            "Seconds to wait for each local generation "
+            f"(default: {DEFAULT_OLLAMA_TIMEOUT_SECONDS:g})."
+        ),
+    )
+    run_evals.add_argument(
+        "--reasoning-effort",
+        choices=("none", "low", "medium", "high", "xhigh", "max"),
+        default=DEFAULT_REASONING_EFFORT,
+        help=f"OpenAI reasoning effort (default: {DEFAULT_REASONING_EFFORT}).",
+    )
+    run_evals.add_argument(
+        "--force",
+        action="store_true",
+        help="Rerun selected cases that are already complete.",
+    )
     return parser
 
 
@@ -138,7 +206,27 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         elif args.command == "validate-evals":
             _validate_evals(args.dataset)
-    except (CliError, OSError, json.JSONDecodeError, ValidationError) as error:
+        elif args.command == "run-evals":
+            summary = _run_evals(
+                dataset_path=args.dataset,
+                output_dir=args.output_dir,
+                case_ids=args.case_ids,
+                provider_name=args.provider,
+                model=args.model,
+                ollama_url=args.ollama_url,
+                ollama_timeout=args.ollama_timeout,
+                reasoning_effort=args.reasoning_effort,
+                force=args.force,
+            )
+            if summary.failed:
+                return 5
+    except (
+        CliError,
+        EvaluationRunError,
+        OSError,
+        json.JSONDecodeError,
+        ValidationError,
+    ) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
     except ProviderContractError as error:
@@ -171,6 +259,53 @@ def _validate_evals(dataset_path: Path) -> None:
             for category, count in sorted(category_counts.items())
         )
     )
+
+
+def _run_evals(
+    *,
+    dataset_path: Path,
+    output_dir: Path,
+    case_ids: list[str] | None,
+    provider_name: str,
+    model: str | None,
+    ollama_url: str,
+    ollama_timeout: float,
+    reasoning_effort: str,
+    force: bool,
+) -> EvaluationRunSummary:
+    dataset_bytes = dataset_path.read_bytes()
+    dataset = load_evaluation_dataset(dataset_path)
+    provider = _make_provider(
+        provider_name,
+        model=model,
+        ollama_url=ollama_url,
+        ollama_timeout=ollama_timeout,
+        reasoning_effort=reasoning_effort,
+    )
+    provider_parameters: dict[str, str | int | float | bool] = {}
+    if provider_name == "ollama":
+        provider_parameters = {
+            "base_url": ollama_url.rstrip("/"),
+            "temperature": 0,
+        }
+    elif provider_name == "openai":
+        provider_parameters = {"reasoning_effort": reasoning_effort}
+
+    runner = EvaluationRunner(
+        dataset=dataset,
+        dataset_sha256=hashlib.sha256(dataset_bytes).hexdigest(),
+        provider=provider,
+        output_dir=output_dir,
+        provider_parameters=provider_parameters,
+    )
+    summary = runner.run(case_ids=case_ids, force=force)
+    print(
+        "evaluation run summary: "
+        f"completed={summary.completed}, "
+        f"skipped={summary.skipped}, "
+        f"failed={summary.failed}"
+    )
+    return summary
 
 
 def _generate(
