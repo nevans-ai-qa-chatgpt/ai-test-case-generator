@@ -59,6 +59,26 @@ Use `--force` only when you intentionally want to replace completed results.
 Changing the dataset, provider, model, prompt version, or relevant provider
 settings requires a new output directory so experiment results cannot be mixed.
 
+## Qwen dataset canary
+
+`runs/qwen3-4b-prompt-v1.2/` records the first attempt to run `EVAL-001` with
+the default local model and prompt v1.2. The clean attempt reached the
+configured 600-second timeout and produced no valid suite, so its `result.json`
+is intentionally a failed result.
+
+The Ollama server remained healthy, but its diagnostic log showed more than
+3,100 decoded tokens at about 5.4 tokens per second, followed by a context shift
+at the 4,096-token context limit. This indicates an unbounded-generation
+problem rather than a malformed dataset or unavailable model. Prompt v1.2 asks
+for one or more cases per category but does not set a compactness or case-count
+limit; `EVAL-001` exposed that weakness before an eight-case run consumed hours.
+
+Do not continue the full Qwen dataset run with this configuration. The next
+controlled experiment should bound the number or size of generated cases while
+keeping the model, dataset, schema, and temperature unchanged. Simply raising
+the timeout or context limit would increase resource use without addressing the
+measured verbosity.
+
 ## Review rubric
 
 Evaluate each generated suite on five dimensions:

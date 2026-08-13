@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "evaluation_id": "EVAL-001",
+  "source_story_id": "US-EVAL-001",
+  "status": "failed",
+  "started_at": "2026-08-13T16:35:13.637975Z",
+  "finished_at": "2026-08-13T16:45:13.667231Z",
+  "duration_seconds": 600.0292672000069,
+  "token_usage": null,
+  "quality_findings_count": null,
+  "error_type": "ProviderError",
+  "error_message": "Ollama request timed out after 600 seconds for model 'qwen3:4b-instruct'"
+}

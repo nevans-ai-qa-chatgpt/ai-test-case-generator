@@ -192,3 +192,28 @@ def test_completed_result_json_is_machine_readable(tmp_path: Path) -> None:
     assert result["evaluation_id"] == "EVAL-008"
     assert result["status"] == "completed"
     assert result["duration_seconds"] >= 0
+
+
+def test_recorded_qwen_canary_matches_the_run_contract() -> None:
+    run_dir = (
+        Path(__file__).parents[1]
+        / "evals"
+        / "runs"
+        / "qwen3-4b-prompt-v1.2"
+    )
+
+    manifest = EvaluationRunManifest.model_validate_json(
+        (run_dir / "run.json").read_text(encoding="utf-8")
+    )
+    result = EvaluationCaseResult.model_validate_json(
+        (run_dir / "cases" / "EVAL-001" / "result.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert manifest.provider == "ollama"
+    assert manifest.model == "qwen3:4b-instruct"
+    assert manifest.prompt_version == "1.2"
+    assert result.status == "failed"
+    assert result.error_type == "ProviderError"
+    assert result.duration_seconds >= 600
