@@ -6,6 +6,7 @@ from urllib.request import Request, urlopen
 
 from pydantic import ValidationError
 
+from ai_test_case_generator.model_output import ModelTestSuite
 from ai_test_case_generator.models import GenerationRequest, TestSuite
 from ai_test_case_generator.prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
 from ai_test_case_generator.providers.base import ProviderError, TokenUsage
@@ -70,7 +71,7 @@ class OllamaTestCaseProvider:
 
     def generate(self, request: GenerationRequest) -> TestSuite:
         """Request structured JSON from Ollama and validate it locally."""
-        schema = TestSuite.model_json_schema()
+        schema = ModelTestSuite.model_json_schema()
         payload: dict[str, object] = {
             "model": self.model,
             "messages": [
@@ -102,7 +103,8 @@ class OllamaTestCaseProvider:
             content = message["content"]
             if not isinstance(content, str):
                 raise TypeError("Ollama response content is not text")
-            return TestSuite.model_validate_json(content)
+            model_suite = ModelTestSuite.model_validate_json(content)
+            return model_suite.to_test_suite()
         except TimeoutError as error:
             raise ProviderError(
                 f"Ollama request timed out after {self.timeout:g} seconds "
@@ -110,7 +112,7 @@ class OllamaTestCaseProvider:
             ) from error
         except ValidationError as error:
             raise ProviderError(
-                "Ollama returned output that failed TestSuite validation: "
+                "Ollama returned output that failed model schema validation: "
                 f"{_validation_error_summary(error)}"
             ) from error
         except Exception as error:

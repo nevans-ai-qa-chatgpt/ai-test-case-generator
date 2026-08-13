@@ -1,0 +1,82 @@
+{
+  "source_story_id": "US-EVAL-001",
+  "findings": [
+    {
+      "rule_id": "missing-preconditions",
+      "severity": "warning",
+      "test_case_id": "TC-001",
+      "message": "The case has no explicit preconditions.",
+      "evidence": []
+    },
+    {
+      "rule_id": "missing-preconditions",
+      "severity": "warning",
+      "test_case_id": "TC-002",
+      "message": "The case has no explicit preconditions.",
+      "evidence": []
+    },
+    {
+      "rule_id": "missing-preconditions",
+      "severity": "warning",
+      "test_case_id": "TC-003",
+      "message": "The case has no explicit preconditions.",
+      "evidence": []
+    },
+    {
+      "rule_id": "unsupported-quoted-message",
+      "severity": "warning",
+      "test_case_id": "TC-004",
+      "message": "Generated quoted text does not appear in the source request.",
+      "evidence": [
+        "invalid-email"
+      ]
+    },
+    {
+      "rule_id": "missing-preconditions",
+      "severity": "warning",
+      "test_case_id": "TC-004",
+      "message": "The case has no explicit preconditions.",
+      "evidence": []
+    },
+    {
+      "rule_id": "unsupported-numeric-value",
+      "severity": "warning",
+      "test_case_id": "TC-005",
+      "message": "Generated numeric values do not appear in the source request.",
+      "evidence": [
+        "31"
+      ]
+    },
+    {
+      "rule_id": "missing-preconditions",
+      "severity": "warning",
+      "test_case_id": "TC-005",
+      "message": "The case has no explicit preconditions.",
+      "evidence": []
+    },
+    {
+      "rule_id": "unsupported-numeric-value",
+      "severity": "warning",
+      "test_case_id": "TC-006",
+      "message": "Generated numeric values do not appear in the source request.",
+      "evidence": [
+        "8"
+      ]
+    },
+    {
+      "rule_id": "missing-preconditions",
+      "severity": "warning",
+      "test_case_id": "TC-006",
+      "message": "The case has no explicit preconditions.",
+      "evidence": []
+    },
+    {
+      "rule_id": "suspicious-edge-classification",
+      "severity": "warning",
+      "test_case_id": "TC-006",
+      "message": "The edge case describes invalid or rejected behavior that may belong in the negative category.",
+      "evidence": []
+    }
+  ],
+  "passed": false
+}

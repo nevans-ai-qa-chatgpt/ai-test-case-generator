@@ -44,7 +44,7 @@ configuration:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.3 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.4 `
   --provider ollama
 ```
 
@@ -97,6 +97,33 @@ The v1.3 canary improved termination but still failed the complete contract:
 This confirms that explicit limits fixed the measured verbosity failure, but
 the canary remains failed because bounded output is not sufficient unless it
 also passes the existing contract. The full eight-case Qwen run remains paused.
+
+Prompt v1.4 removes step numbers from the model-facing schema. The order of the
+generated step list carries the model's sequencing decision; application code
+then assigns consecutive display numbers while constructing the public
+`TestSuite`. This does not repair or reinterpret generated content. It moves a
+deterministic presentation field out of the probabilistic model's job while
+leaving content, category, traceability, and service validation strict.
+
+The v1.4 `EVAL-001` canary completed successfully in 285.5 seconds using 1,043
+input tokens and 1,498 output tokens. The provider schema, conversion, public
+domain contract, service checks, and artifact runner all passed. Every saved
+case has consecutive step numbers assigned from list order.
+
+The generated content still fails the quality bar with 10 advisory findings:
+
+- All six cases omit preconditions.
+- TC-004 invents malformed-email behavior and traces it to a prompt instruction
+  instead of an actual story requirement.
+- TC-005 invents a 31-minute value.
+- TC-006 invents an eight-character password rule and composition rules.
+- TC-006 treats password-policy rejection as an edge case instead of negative.
+- Several cases assume redirects, messages, or backend state not stated in the
+  acceptance criteria.
+
+The canary therefore proves that deterministic numbering removed the structural
+failure, not that Qwen output is ready for unattended use. The full dataset run
+remains paused until the next quality-focused decision.
 
 ## Review rubric
 

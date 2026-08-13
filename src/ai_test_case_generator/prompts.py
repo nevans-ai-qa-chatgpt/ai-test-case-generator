@@ -2,7 +2,7 @@
 
 from ai_test_case_generator.models import GenerationRequest
 
-PROMPT_VERSION = "1.3"
+PROMPT_VERSION = "1.4"
 
 SYSTEM_PROMPT = """You are a senior quality engineer generating review-ready test cases.
 
@@ -23,10 +23,11 @@ Return no more than 6 test cases total and no more than 6 steps per case. Within
 those limits, cover every requested category first, then prioritize distinct,
 high-risk requirements. Omit redundant cases and repetitive steps.
 
-Use explicit preconditions when test state is required. Separate distinct user and
-system interactions into consecutive steps starting at 1. Expected results must be
-observable and grounded in the supplied requirements. Use unique test-case IDs and
-prefer meaningful risk coverage over superficial wording.
+Use explicit preconditions when test state is required. Return distinct user and
+system interactions as steps in their intended execution order; the application
+assigns display numbers from that order. Expected results must be observable and
+grounded in the supplied requirements. Use unique test-case IDs and prefer meaningful
+risk coverage over superficial wording.
 """
 
 

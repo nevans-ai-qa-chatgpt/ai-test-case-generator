@@ -3,6 +3,11 @@ from types import SimpleNamespace
 
 import pytest
 
+from ai_test_case_generator.model_output import (
+    ModelTestCase,
+    ModelTestStep,
+    ModelTestSuite,
+)
 from ai_test_case_generator.models import (
     GenerationRequest,
     Priority,
@@ -69,9 +74,33 @@ def make_suite() -> SuiteModel:
     )
 
 
+def make_model_suite() -> ModelTestSuite:
+    return ModelTestSuite(
+        source_story_id="US-001",
+        test_cases=[
+            ModelTestCase(
+                id="TC-001",
+                title="Request a password reset",
+                category=Category.FUNCTIONAL,
+                priority=Priority.HIGH,
+                objective="Verify the primary reset workflow.",
+                steps=[
+                    ModelTestStep(
+                        action="Request a reset link.",
+                        expected_result="A time-limited link is sent.",
+                    )
+                ],
+                source_requirements=[
+                    "A reset link expires after a limited time."
+                ],
+            )
+        ],
+    )
+
+
 def test_provider_uses_responses_structured_outputs() -> None:
     response = SimpleNamespace(
-        output_parsed=make_suite(),
+        output_parsed=make_model_suite(),
         usage=SimpleNamespace(input_tokens=120, output_tokens=80, total_tokens=200),
     )
     responses = RecordingResponses(response)
@@ -83,17 +112,17 @@ def test_provider_uses_responses_structured_outputs() -> None:
 
     result = provider.generate(make_request())
 
-    assert result == response.output_parsed
+    assert result == make_suite()
     assert responses.call is not None
     assert responses.call["model"] == "gpt-test"
     assert responses.call["reasoning"] == {"effort": "low"}
-    assert responses.call["text_format"] is SuiteModel
+    assert responses.call["text_format"] is ModelTestSuite
     assert provider.last_usage is not None
     assert provider.last_usage.total_tokens == 200
 
 
 def test_prompt_separates_instructions_from_request_data() -> None:
-    response = SimpleNamespace(output_parsed=make_suite(), usage=None)
+    response = SimpleNamespace(output_parsed=make_model_suite(), usage=None)
     responses = RecordingResponses(response)
     provider = OpenAITestCaseProvider(client=MockClient(responses))
 
@@ -132,4 +161,3 @@ def test_sdk_failure_is_wrapped_without_exposing_details() -> None:
         provider.generate(make_request())
 
     assert "sensitive upstream details" not in str(error.value)
-

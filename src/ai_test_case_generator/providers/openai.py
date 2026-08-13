@@ -4,6 +4,7 @@ from typing import Protocol
 
 from openai import OpenAI
 
+from ai_test_case_generator.model_output import ModelTestSuite
 from ai_test_case_generator.models import GenerationRequest, TestSuite
 from ai_test_case_generator.prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
 from ai_test_case_generator.providers.base import ProviderError, TokenUsage
@@ -49,7 +50,7 @@ class OpenAITestCaseProvider:
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": build_user_prompt(request)},
                 ],
-                text_format=TestSuite,
+                text_format=ModelTestSuite,
             )
         except Exception as error:
             raise ProviderError(
@@ -58,9 +59,9 @@ class OpenAITestCaseProvider:
 
         self.last_usage = _extract_usage(response)
         parsed = getattr(response, "output_parsed", None)
-        if not isinstance(parsed, TestSuite):
-            raise ProviderError("OpenAI response did not contain a parsed TestSuite")
-        return parsed
+        if not isinstance(parsed, ModelTestSuite):
+            raise ProviderError("OpenAI response did not contain parsed model output")
+        return parsed.to_test_suite()
 
 
 def _extract_usage(response: object) -> TokenUsage | None:
@@ -72,4 +73,3 @@ def _extract_usage(response: object) -> TokenUsage | None:
         output_tokens=int(getattr(usage, "output_tokens", 0)),
         total_tokens=int(getattr(usage, "total_tokens", 0)),
     )
-

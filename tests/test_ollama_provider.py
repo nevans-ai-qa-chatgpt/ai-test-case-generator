@@ -3,6 +3,11 @@ from dataclasses import dataclass
 
 import pytest
 
+from ai_test_case_generator.model_output import (
+    ModelTestCase,
+    ModelTestStep,
+    ModelTestSuite,
+)
 from ai_test_case_generator.models import (
     GenerationRequest,
     Priority,
@@ -72,11 +77,38 @@ def make_suite() -> SuiteModel:
     )
 
 
+def make_model_suite() -> ModelTestSuite:
+    return ModelTestSuite(
+        source_story_id="US-001",
+        test_cases=[
+            ModelTestCase(
+                id="TC-001",
+                title="Request a password reset",
+                category=Category.FUNCTIONAL,
+                priority=Priority.HIGH,
+                objective="Verify the primary reset workflow.",
+                steps=[
+                    ModelTestStep(
+                        action="Request a reset link.",
+                        expected_result="A time-limited link is sent.",
+                    )
+                ],
+                source_requirements=[
+                    "A reset link expires after a limited time."
+                ],
+            )
+        ],
+    )
+
+
 def test_provider_requests_and_validates_structured_output() -> None:
     suite = make_suite()
     transport = RecordingTransport(
         {
-            "message": {"role": "assistant", "content": suite.model_dump_json()},
+            "message": {
+                "role": "assistant",
+                "content": make_model_suite().model_dump_json(),
+            },
             "prompt_eval_count": 120,
             "eval_count": 80,
         }
@@ -96,10 +128,11 @@ def test_provider_requests_and_validates_structured_output() -> None:
     assert transport.payload is not None
     assert transport.payload["model"] == "local-test"
     assert transport.payload["stream"] is False
-    assert transport.payload["format"] == SuiteModel.model_json_schema()
+    assert transport.payload["format"] == ModelTestSuite.model_json_schema()
     schema = transport.payload["format"]
     assert schema["properties"]["test_cases"]["maxItems"] == 6
-    assert schema["$defs"]["TestCase"]["properties"]["steps"]["maxItems"] == 6
+    assert schema["$defs"]["ModelTestCase"]["properties"]["steps"]["maxItems"] == 6
+    assert "number" not in schema["$defs"]["ModelTestStep"]["properties"]
     assert transport.payload["options"] == {"temperature": 0}
     assert provider.last_usage is not None
     assert provider.last_usage.total_tokens == 200
@@ -107,7 +140,12 @@ def test_provider_requests_and_validates_structured_output() -> None:
 
 def test_prompt_separates_instructions_from_request_data() -> None:
     transport = RecordingTransport(
-        {"message": {"role": "assistant", "content": make_suite().model_dump_json()}}
+        {
+            "message": {
+                "role": "assistant",
+                "content": make_model_suite().model_dump_json(),
+            }
+        }
     )
     provider = OllamaTestCaseProvider(transport=transport)
 

@@ -244,3 +244,44 @@ def test_recorded_bounded_qwen_canary_matches_the_run_contract() -> None:
     assert result.error_type == "ProviderError"
     assert "test_cases.0 (value_error)" in result.error_message
     assert 200 <= result.duration_seconds < 600
+
+
+def test_recorded_auto_numbered_qwen_canary_matches_the_run_contract() -> None:
+    run_dir = (
+        Path(__file__).parents[1]
+        / "evals"
+        / "runs"
+        / "qwen3-4b-prompt-v1.4"
+    )
+
+    manifest = EvaluationRunManifest.model_validate_json(
+        (run_dir / "run.json").read_text(encoding="utf-8")
+    )
+    result = EvaluationCaseResult.model_validate_json(
+        (run_dir / "cases" / "EVAL-001" / "result.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    suite = SuiteModel.model_validate_json(
+        (run_dir / "cases" / "EVAL-001" / "suite.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    quality_data = json.loads(
+        (run_dir / "cases" / "EVAL-001" / "quality.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert manifest.provider == "ollama"
+    assert manifest.model == "qwen3:4b-instruct"
+    assert manifest.prompt_version == "1.4"
+    assert result.status == "completed"
+    assert result.token_usage is not None
+    assert result.token_usage.total_tokens == 2541
+    assert result.quality_findings_count == len(quality_data["findings"]) == 10
+    assert len(suite.test_cases) == 6
+    assert all(
+        [step.number for step in case.steps] == list(range(1, len(case.steps) + 1))
+        for case in suite.test_cases
+    )

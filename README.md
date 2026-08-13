@@ -31,6 +31,7 @@ The repository currently defines:
 - Sequential evaluation runs that preserve progress across failures and stops
 - Per-case suites, quality reports, timing, token usage, and status artifacts
 - Schema-enforced limits of six test cases and six steps per case
+- Deterministic step numbering derived from model-provided list order
 
 The fake provider intentionally uses fixed templates rather than simulating AI
 quality. Its purpose is to exercise the application workflow reliably. The
@@ -64,7 +65,7 @@ output directory:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.3 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.4 `
   --provider ollama
 ```
 
@@ -72,6 +73,12 @@ Results are saved after every case. Repeating the command skips completed cases
 and retries failed or interrupted ones. `--case EVAL-001` limits an invocation
 to one case; repeat the option to select multiple cases. See
 [`evals/README.md`](evals/README.md) for artifact layout and safety rules.
+
+Model-backed providers use a dedicated output contract whose steps are ordered
+but unnumbered. After validation, the application assigns `1, 2, 3...` from
+list position while building the public `TestSuite`. This is deterministic
+derivation, not silent repair: semantic fields still must satisfy the strict
+provider and service contracts.
 
 ## Generate test cases
 
