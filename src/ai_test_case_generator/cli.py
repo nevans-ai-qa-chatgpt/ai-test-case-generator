@@ -287,6 +287,7 @@ def _run_evals(
         provider_parameters = {
             "base_url": ollama_url.rstrip("/"),
             "temperature": 0,
+            "timeout_seconds": ollama_timeout,
         }
     elif provider_name == "openai":
         provider_parameters = {"reasoning_effort": reasoning_effort}

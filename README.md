@@ -30,6 +30,7 @@ The repository currently defines:
 - Offline dataset validation that makes no model calls
 - Sequential evaluation runs that preserve progress across failures and stops
 - Per-case suites, quality reports, timing, token usage, and status artifacts
+- Schema-enforced limits of six test cases and six steps per case
 
 The fake provider intentionally uses fixed templates rather than simulating AI
 quality. Its purpose is to exercise the application workflow reliably. The
@@ -63,7 +64,7 @@ output directory:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.2 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.3 `
   --provider ollama
 ```
 

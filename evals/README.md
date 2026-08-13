@@ -44,7 +44,7 @@ configuration:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.2 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.3 `
   --provider ollama
 ```
 
@@ -78,6 +78,25 @@ controlled experiment should bound the number or size of generated cases while
 keeping the model, dataset, schema, and temperature unchanged. Simply raising
 the timeout or context limit would increase resource use without addressing the
 measured verbosity.
+
+Prompt v1.3 is the controlled follow-up: the output contract and prompt both
+limit a suite to six cases and each case to six steps. Within those bounds, the
+model must cover all requested categories first and then prioritize distinct,
+high-risk requirements. The dataset, Qwen model, temperature, and hardware stay
+unchanged so the canary comparison isolates this output-bound change.
+
+The v1.3 canary improved termination but still failed the complete contract:
+
+- Qwen finished generation in about 243-251 seconds instead of timing out.
+- Output fell from more than 3,100 unfinished tokens to roughly 1,437 tokens.
+- The response finished without a context shift or truncation.
+- Pydantic rejected the first test case at its model-level validator. The only
+  such validator on `TestCase` checks consecutive step numbering, so the model
+  did not number that case's steps consecutively from 1.
+
+This confirms that explicit limits fixed the measured verbosity failure, but
+the canary remains failed because bounded output is not sufficient unless it
+also passes the existing contract. The full eight-case Qwen run remains paused.
 
 ## Review rubric
 

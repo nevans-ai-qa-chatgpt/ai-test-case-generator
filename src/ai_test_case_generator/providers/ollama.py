@@ -4,6 +4,8 @@ import json
 from typing import Protocol
 from urllib.request import Request, urlopen
 
+from pydantic import ValidationError
+
 from ai_test_case_generator.models import GenerationRequest, TestSuite
 from ai_test_case_generator.prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
 from ai_test_case_generator.providers.base import ProviderError, TokenUsage
@@ -106,10 +108,28 @@ class OllamaTestCaseProvider:
                 f"Ollama request timed out after {self.timeout:g} seconds "
                 f"for model {self.model!r}"
             ) from error
+        except ValidationError as error:
+            raise ProviderError(
+                "Ollama returned output that failed TestSuite validation: "
+                f"{_validation_error_summary(error)}"
+            ) from error
         except Exception as error:
             raise ProviderError(
                 f"Ollama request failed for model {self.model!r} at {self.base_url}"
             ) from error
+
+
+def _validation_error_summary(error: ValidationError) -> str:
+    """Describe contract failures without exposing generated field values."""
+
+    summaries = []
+    for detail in error.errors(include_input=False, include_url=False):
+        if detail["type"] == "extra_forbidden":
+            location = "<extra field>"
+        else:
+            location = ".".join(str(part) for part in detail["loc"]) or "root"
+        summaries.append(f"{location} ({detail['type']})")
+    return ", ".join(summaries)
 
 
 def _extract_usage(response: dict[str, object]) -> TokenUsage | None:

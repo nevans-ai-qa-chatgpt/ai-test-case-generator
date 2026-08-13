@@ -97,6 +97,9 @@ def test_provider_requests_and_validates_structured_output() -> None:
     assert transport.payload["model"] == "local-test"
     assert transport.payload["stream"] is False
     assert transport.payload["format"] == SuiteModel.model_json_schema()
+    schema = transport.payload["format"]
+    assert schema["properties"]["test_cases"]["maxItems"] == 6
+    assert schema["$defs"]["TestCase"]["properties"]["steps"]["maxItems"] == 6
     assert transport.payload["options"] == {"temperature": 0}
     assert provider.last_usage is not None
     assert provider.last_usage.total_tokens == 200
@@ -119,14 +122,19 @@ def test_prompt_separates_instructions_from_request_data() -> None:
     assert '"id": "US-001"' in messages[1]["content"]
 
 
-def test_invalid_model_json_is_a_provider_error() -> None:
+def test_invalid_model_json_reports_safe_validation_locations() -> None:
     transport = RecordingTransport(
         {"message": {"role": "assistant", "content": json.dumps({"wrong": True})}}
     )
     provider = OllamaTestCaseProvider(transport=transport)
 
-    with pytest.raises(ProviderError, match="Ollama request failed"):
+    with pytest.raises(
+        ProviderError,
+        match=r"source_story_id \(missing\)",
+    ) as error:
         provider.generate(make_request())
+
+    assert "wrong" not in str(error.value)
 
 
 def test_transport_failure_is_wrapped_without_exposing_details() -> None:

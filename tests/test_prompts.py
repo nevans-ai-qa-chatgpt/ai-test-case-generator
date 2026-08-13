@@ -7,7 +7,7 @@ from ai_test_case_generator.prompts import (
 
 
 def test_prompt_version_changes_when_generation_instructions_change() -> None:
-    assert PROMPT_VERSION == "1.2"
+    assert PROMPT_VERSION == "1.3"
 
 
 def test_system_prompt_contains_measured_quality_guards() -> None:
@@ -19,6 +19,9 @@ def test_system_prompt_contains_measured_quality_guards() -> None:
     assert "negative cases cover invalid or rejected behavior" in normalized_prompt
     assert "edge cases cover boundaries or state transitions" in normalized_prompt
     assert "Use explicit preconditions" in normalized_prompt
+    assert "no more than 6 test cases" in normalized_prompt
+    assert "no more than 6 steps per case" in normalized_prompt
+    assert "Omit redundant cases" in normalized_prompt
 
 
 def test_user_prompt_identifies_the_version_and_preserves_request_data() -> None:
@@ -32,8 +35,9 @@ def test_user_prompt_identifies_the_version_and_preserves_request_data() -> None
 
     prompt = build_user_prompt(request)
 
-    assert "Prompt version: 1.2" in prompt
+    assert "Prompt version: 1.3" in prompt
     assert '"id": "US-001"' in prompt
     assert "completion checks" in prompt
     assert "does not mean an unregistered address receives a link" in prompt
     assert "Invalid input is negative" in prompt
+    assert "at most 6 cases" in prompt

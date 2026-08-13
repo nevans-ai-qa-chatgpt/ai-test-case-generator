@@ -217,3 +217,30 @@ def test_recorded_qwen_canary_matches_the_run_contract() -> None:
     assert result.status == "failed"
     assert result.error_type == "ProviderError"
     assert result.duration_seconds >= 600
+
+
+def test_recorded_bounded_qwen_canary_matches_the_run_contract() -> None:
+    run_dir = (
+        Path(__file__).parents[1]
+        / "evals"
+        / "runs"
+        / "qwen3-4b-prompt-v1.3"
+    )
+
+    manifest = EvaluationRunManifest.model_validate_json(
+        (run_dir / "run.json").read_text(encoding="utf-8")
+    )
+    result = EvaluationCaseResult.model_validate_json(
+        (run_dir / "cases" / "EVAL-001" / "result.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert manifest.provider == "ollama"
+    assert manifest.model == "qwen3:4b-instruct"
+    assert manifest.prompt_version == "1.3"
+    assert manifest.provider_parameters["timeout_seconds"] == 600.0
+    assert result.status == "failed"
+    assert result.error_type == "ProviderError"
+    assert "test_cases.0 (value_error)" in result.error_message
+    assert 200 <= result.duration_seconds < 600

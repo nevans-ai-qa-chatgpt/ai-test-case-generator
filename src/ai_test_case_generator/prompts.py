@@ -2,7 +2,7 @@
 
 from ai_test_case_generator.models import GenerationRequest
 
-PROMPT_VERSION = "1.2"
+PROMPT_VERSION = "1.3"
 
 SYSTEM_PROMPT = """You are a senior quality engineer generating review-ready test cases.
 
@@ -18,6 +18,10 @@ categories. Functional cases cover supported workflows, negative cases cover inv
 or rejected behavior, and edge cases cover boundaries or state transitions. Preserve
 the source story ID exactly. Trace each case using the exact text of the most relevant
 acceptance criteria, or the narrative when no criteria exist.
+
+Return no more than 6 test cases total and no more than 6 steps per case. Within
+those limits, cover every requested category first, then prioritize distinct,
+high-risk requirements. Omit redundant cases and repetitive steps.
 
 Use explicit preconditions when test state is required. Separate distinct user and
 system interactions into consecutive steps starting at 1. Expected results must be
@@ -39,5 +43,6 @@ def build_user_prompt(request: GenerationRequest) -> str:
         "- Same confirmation means same visible message only; it does not mean "
         "an unregistered address receives a link.\n"
         "- Invalid input is negative; a boundary or state transition is edge.\n"
-        "- Every case has the preconditions and separate steps needed to execute it."
+        "- Every case has the preconditions and separate steps needed to execute it.\n"
+        "- The suite has at most 6 cases, each with at most 6 concise steps."
     )

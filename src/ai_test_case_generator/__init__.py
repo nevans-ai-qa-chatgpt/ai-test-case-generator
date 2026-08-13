@@ -14,6 +14,8 @@ from ai_test_case_generator.evaluation_runner import (
 )
 from ai_test_case_generator.models import (
     GenerationRequest,
+    MAX_STEPS_PER_CASE,
+    MAX_TEST_CASES,
     Priority,
     TestCase,
     TestCategory,
@@ -33,6 +35,8 @@ __all__ = [
     "EvaluationRunSummary",
     "GenerationRequest",
     "GenerationService",
+    "MAX_STEPS_PER_CASE",
+    "MAX_TEST_CASES",
     "Priority",
     "ProviderContractError",
     "TestCase",

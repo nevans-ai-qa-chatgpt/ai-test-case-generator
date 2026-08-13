@@ -5,6 +5,9 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+MAX_TEST_CASES = 6
+MAX_STEPS_PER_CASE = 6
+
 
 class StrictModel(BaseModel):
     """Shared rules for data entering or leaving the application."""
@@ -71,7 +74,7 @@ class TestCase(StrictModel):
     priority: Priority
     objective: str = Field(min_length=1)
     preconditions: list[str] = Field(default_factory=list)
-    steps: list[TestStep] = Field(min_length=1)
+    steps: list[TestStep] = Field(min_length=1, max_length=MAX_STEPS_PER_CASE)
     source_requirements: list[str] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
 
@@ -89,7 +92,7 @@ class TestSuite(StrictModel):
 
     schema_version: str = Field(default="1.0", pattern=r"^1\.0$")
     source_story_id: str = Field(min_length=1)
-    test_cases: list[TestCase] = Field(min_length=1)
+    test_cases: list[TestCase] = Field(min_length=1, max_length=MAX_TEST_CASES)
 
     @model_validator(mode="after")
     def test_case_ids_are_unique(self) -> Self:

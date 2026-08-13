@@ -5,6 +5,8 @@ import pytest
 from pydantic import ValidationError
 
 from ai_test_case_generator.models import (
+    MAX_STEPS_PER_CASE,
+    MAX_TEST_CASES,
     Priority,
     TestCase as CaseModel,
     TestCategory as Category,
@@ -61,11 +63,41 @@ def test_steps_must_start_at_one_and_be_consecutive() -> None:
         )
 
 
+def test_test_case_rejects_more_than_six_steps() -> None:
+    with pytest.raises(ValidationError, match="at most 6 items"):
+        CaseModel(
+            id="TC-001",
+            title="Too many steps",
+            category=Category.FUNCTIONAL,
+            priority=Priority.MEDIUM,
+            objective="Demonstrate the generation bound.",
+            steps=[
+                StepModel(
+                    number=number,
+                    action=f"Action {number}",
+                    expected_result=f"Result {number}",
+                )
+                for number in range(1, MAX_STEPS_PER_CASE + 2)
+            ],
+        )
+
+
 def test_test_case_ids_must_be_unique_within_a_suite() -> None:
     with pytest.raises(ValidationError, match="must be unique"):
         SuiteModel(
             source_story_id="US-001",
             test_cases=[make_test_case(), make_test_case()],
+        )
+
+
+def test_suite_rejects_more_than_six_test_cases() -> None:
+    with pytest.raises(ValidationError, match="at most 6 items"):
+        SuiteModel(
+            source_story_id="US-001",
+            test_cases=[
+                make_test_case(case_id=f"TC-{number:03d}")
+                for number in range(1, MAX_TEST_CASES + 2)
+            ],
         )
 
 
@@ -108,7 +140,6 @@ def test_evaluation_baseline_matches_the_domain_contract() -> None:
 @pytest.mark.parametrize(
     "filename",
     [
-        "password_reset_prompt_v1.1.json",
         "password_reset_prompt_v1.2.json",
         "password_reset_prompt_v1.2_gemma3_12b.json",
     ],
@@ -123,3 +154,15 @@ def test_evaluation_experiment_matches_the_domain_contract(filename: str) -> Non
     )
 
     assert suite.source_story_id == "US-001"
+
+
+def test_rejected_v1_1_experiment_exceeds_the_current_case_limit() -> None:
+    experiment_path = (
+        Path(__file__).parents[1]
+        / "evals"
+        / "experiments"
+        / "password_reset_prompt_v1.1.json"
+    )
+
+    with pytest.raises(ValidationError, match="at most 6 items"):
+        SuiteModel.model_validate_json(experiment_path.read_text(encoding="utf-8"))
