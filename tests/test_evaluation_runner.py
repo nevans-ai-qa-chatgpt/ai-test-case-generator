@@ -332,3 +332,34 @@ def test_recorded_grounded_qwen_canary_matches_the_run_contract() -> None:
     assert result.quality_findings_count == len(quality_data["findings"]) == 9
     assert all(case.preconditions for case in suite.test_cases)
     assert cited == authoritative
+
+
+def test_recorded_grounded_gemma_canary_preserves_contract_failure() -> None:
+    run_dir = (
+        Path(__file__).parents[1]
+        / "evals"
+        / "runs"
+        / "gemma3-12b-prompt-v1.5"
+    )
+
+    manifest = EvaluationRunManifest.model_validate_json(
+        (run_dir / "run.json").read_text(encoding="utf-8")
+    )
+    case_dir = run_dir / "cases" / "EVAL-001"
+    result = EvaluationCaseResult.model_validate_json(
+        (case_dir / "result.json").read_text(encoding="utf-8")
+    )
+
+    assert manifest.provider == "ollama"
+    assert manifest.model == "gemma3:12b"
+    assert manifest.prompt_version == "1.5"
+    assert manifest.provider_parameters["temperature"] == 0
+    assert manifest.provider_parameters["timeout_seconds"] == 900.0
+    assert result.status == "failed"
+    assert result.error_type == "ProviderContractError"
+    assert result.error_message == "TC-006 cites unsupported source requirements"
+    assert result.duration_seconds > 600
+    assert result.token_usage is None
+    assert result.quality_findings_count is None
+    assert not (case_dir / "suite.json").exists()
+    assert not (case_dir / "quality.json").exists()

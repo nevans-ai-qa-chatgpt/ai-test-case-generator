@@ -156,6 +156,32 @@ attach unsupported claims to valid citations. Prompt hardening has reached
 diminishing returns for this canary. Keep the full Qwen run paused; the next
 useful comparison should hold prompt v1.5 constant and test a stronger model.
 
+## Gemma comparison with prompt v1.5
+
+`runs/gemma3-12b-prompt-v1.5/` records the stronger-model follow-up on the same
+`EVAL-001` request, prompt v1.5, model-facing schema, temperature-zero setting,
+and CPU-only hardware. The timeout ceiling was raised from 600 to 900 seconds
+only so the slower model could return a result; it is recorded in `run.json`
+and is not treated as an equivalent operational budget.
+
+Gemma returned after 653.9 seconds, exceeding the Qwen run's 600-second ceiling,
+and the service rejected its suite because TC-006 cited text that was not an
+exact acceptance criterion. The runner therefore correctly records a failed
+`ProviderContractError` result and does not write `suite.json` or
+`quality.json` for an invalid suite. Token usage and advisory finding counts are
+unavailable because generation did not cross the service boundary.
+
+| Model | Contract result | Duration | Relative duration |
+| --- | --- | ---: | ---: |
+| `qwen3:4b-instruct` | Pass; 9 advisory findings | 310.0 s | 1.00x |
+| `gemma3:12b` | Fail; unsupported citation | 653.9 s | 2.11x |
+
+This canary does not support switching the local default to Gemma. Qwen remains
+the faster development model and is the only one of the two that passes the
+v1.5 contract on this input, although its nine findings still require human
+review. Keep the full dataset run paused: one input is insufficient for a broad
+model decision, and neither result meets the unattended-generation quality bar.
+
 ## Review rubric
 
 Evaluate each generated suite on five dimensions:

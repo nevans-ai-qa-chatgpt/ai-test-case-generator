@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "created_at": "2026-08-13T18:53:49.983214Z",
+  "dataset_sha256": "35f0cc32dc2524f3204c3713c0c34878c5970ba8a21c1c30eb7815e4f5bc4816",
+  "provider": "ollama",
+  "model": "gemma3:12b",
+  "prompt_version": "1.5",
+  "provider_parameters": {
+    "base_url": "http://127.0.0.1:11434",
+    "temperature": 0,
+    "timeout_seconds": 900.0
+  }
+}
