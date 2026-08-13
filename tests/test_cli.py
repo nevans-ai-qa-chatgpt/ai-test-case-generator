@@ -170,3 +170,59 @@ def test_ollama_provider_uses_local_defaults_without_an_api_key(
     assert provider.model == "qwen3:4b-instruct"
     assert provider.base_url == "http://localhost:11434"
     assert provider.timeout == 300
+
+
+def test_generate_can_write_a_machine_readable_quality_report(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    input_path = tmp_path / "request.json"
+    output_path = tmp_path / "suite.json"
+    report_path = tmp_path / "quality.json"
+    write_request(input_path)
+
+    exit_code = main(
+        [
+            "generate",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+            "--quality-report",
+            str(report_path),
+        ]
+    )
+
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert exit_code == 0
+    assert report == {
+        "source_story_id": "US-001",
+        "findings": [],
+        "passed": True,
+    }
+    assert "quality gate: no advisory findings" in capsys.readouterr().err
+
+
+def test_quality_report_cannot_replace_the_generated_suite(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    input_path = tmp_path / "request.json"
+    output_path = tmp_path / "suite.json"
+    write_request(input_path)
+
+    exit_code = main(
+        [
+            "generate",
+            "--input",
+            str(input_path),
+            "--output",
+            str(output_path),
+            "--quality-report",
+            str(output_path),
+        ]
+    )
+
+    assert exit_code == 2
+    assert not output_path.exists()
+    assert "must differ" in capsys.readouterr().err

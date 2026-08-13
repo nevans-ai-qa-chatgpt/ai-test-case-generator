@@ -26,6 +26,7 @@ from ai_test_case_generator.providers.openai import (
     DEFAULT_OPENAI_MODEL,
     DEFAULT_REASONING_EFFORT,
 )
+from ai_test_case_generator.quality import QualityReport, evaluate_quality
 from ai_test_case_generator.service import GenerationService, ProviderContractError
 
 
@@ -96,6 +97,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Replace the output file if it already exists.",
     )
+    generate.add_argument(
+        "--quality-report",
+        type=Path,
+        help="Optional path for the advisory quality report JSON.",
+    )
     return parser
 
 
@@ -115,6 +121,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 ollama_timeout=args.ollama_timeout,
                 reasoning_effort=args.reasoning_effort,
                 force=args.force,
+                quality_report_path=args.quality_report,
             )
     except (CliError, OSError, json.JSONDecodeError, ValidationError) as error:
         print(f"error: {error}", file=sys.stderr)
@@ -139,9 +146,20 @@ def _generate(
     ollama_timeout: float,
     reasoning_effort: str,
     force: bool,
+    quality_report_path: Path | None,
 ) -> None:
+    if (
+        quality_report_path is not None
+        and quality_report_path.resolve() == output_path.resolve()
+    ):
+        raise CliError("quality report path must differ from the generated suite path")
     if output_path.exists() and not force:
         raise CliError(f"output already exists: {output_path}; use --force to replace it")
+    if quality_report_path is not None and quality_report_path.exists() and not force:
+        raise CliError(
+            f"quality report already exists: {quality_report_path}; "
+            "use --force to replace it"
+        )
 
     request_data = json.loads(input_path.read_text(encoding="utf-8"))
     request = GenerationRequest.model_validate(request_data)
@@ -154,6 +172,7 @@ def _generate(
     )
     service = GenerationService(provider)
     suite = service.generate(request)
+    quality_report = evaluate_quality(request, suite)
 
     output = json.dumps(
         suite.model_dump(mode="json"),
@@ -162,6 +181,16 @@ def _generate(
     ) + "\n"
     output_path.write_text(output, encoding="utf-8")
 
+    if quality_report_path is not None:
+        report_output = json.dumps(
+            quality_report.model_dump(mode="json"),
+            indent=2,
+            ensure_ascii=False,
+        ) + "\n"
+        quality_report_path.write_text(report_output, encoding="utf-8")
+
+    _print_quality_findings(quality_report)
+
     usage = getattr(provider, "last_usage", None)
     if usage is not None:
         print(
@@ -169,6 +198,23 @@ def _generate(
             f"input={usage.input_tokens}, "
             f"output={usage.output_tokens}, "
             f"total={usage.total_tokens}",
+            file=sys.stderr,
+        )
+
+
+def _print_quality_findings(report: QualityReport) -> None:
+    if report.passed:
+        print("quality gate: no advisory findings", file=sys.stderr)
+        return
+
+    print(f"quality gate: {len(report.findings)} advisory finding(s)", file=sys.stderr)
+    for finding in report.findings:
+        evidence = (
+            f" evidence={', '.join(finding.evidence)}" if finding.evidence else ""
+        )
+        print(
+            f"quality warning [{finding.rule_id}] {finding.test_case_id}: "
+            f"{finding.message}{evidence}",
             file=sys.stderr,
         )
 

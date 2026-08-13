@@ -99,6 +99,29 @@ an Ollama server at a different address, or `--ollama-timeout` when slower
 hardware needs longer than the 300-second default. Automated tests use a fake
 HTTP transport and do not require Ollama or a downloaded model.
 
+## Advisory quality gate
+
+Every generated suite passes through deterministic advisory checks after schema
+and service validation. The gate reports unsupported numeric values, invented
+quoted messages, missing preconditions, suspicious edge-case classification,
+and reset-link delivery claims for unregistered addresses. These findings do
+not block output while the heuristics are being calibrated.
+
+Add `--quality-report` to save the findings as machine-readable JSON:
+
+```powershell
+ai-test-cases generate `
+  --input examples/password_reset_request.json `
+  --output password_reset_suite.json `
+  --provider ollama `
+  --quality-report password_reset_quality.json
+```
+
+The gate is intentionally explainable and incomplete: it can flag known failure
+patterns but cannot prove that every generated behavior is supported. Human
+review remains required. Local comparison results for Qwen3 4B and Gemma 3 12B
+are recorded in [`evals/README.md`](evals/README.md).
+
 ## Example
 
 ```python

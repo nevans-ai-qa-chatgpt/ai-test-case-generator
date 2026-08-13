@@ -86,3 +86,35 @@ Runtime observations on this machine:
 | v1.0 | 722 | 1,142 | 1,864 | 208.7 s |
 | v1.1 | 846 | 1,478 | 2,324 | 263.2 s |
 | v1.2 | 937 | 1,308 | 2,245 | 219.1 s |
+
+## Model comparison with prompt v1.2
+
+`experiments/password_reset_prompt_v1.2_gemma3_12b.json` applies the same
+request, prompt, schema, temperature, and CPU-only runtime to the larger
+`gemma3:12b` model. Its companion `_quality.json` file records the deterministic
+advisory findings.
+
+Gemma 3 12B improves the result materially:
+
+- It uses the configured expiration period instead of inventing a numeric expiry.
+- It classifies invalid password behavior as negative and link expiration as edge.
+- It separates workflows into multiple executable actions.
+- It keeps the unregistered-email assertion focused on the visible confirmation.
+
+It still does not pass the full rubric:
+
+- All four cases omit explicit preconditions.
+- It invents a `Forgot Password` field label.
+- It gives unsupported password-policy examples such as missing special characters.
+- The functional workflow assumes redirect, persistence, and login behavior not
+  stated in the requirements.
+
+| Model | Cases | Advisory findings | Input tokens | Output tokens | Duration |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `qwen3:4b-instruct` | 6 | 16 | 937 | 1,308 | 219.1 s |
+| `gemma3:12b` | 4 | 7 | 1,002 | 1,075 | 440.8 s |
+
+On this hardware, Gemma cuts the deterministic finding count by more than half
+but takes about twice as long. Qwen remains the practical default for iterative
+development; Gemma is an optional quality-first comparison model. Neither is
+approved for unattended generation without human review.

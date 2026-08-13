@@ -110,6 +110,7 @@ def test_evaluation_baseline_matches_the_domain_contract() -> None:
     [
         "password_reset_prompt_v1.1.json",
         "password_reset_prompt_v1.2.json",
+        "password_reset_prompt_v1.2_gemma3_12b.json",
     ],
 )
 def test_evaluation_experiment_matches_the_domain_contract(filename: str) -> None:
