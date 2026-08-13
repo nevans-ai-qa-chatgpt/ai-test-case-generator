@@ -32,6 +32,7 @@ The repository currently defines:
 - Per-case suites, quality reports, timing, token usage, and status artifacts
 - Schema-enforced limits of six test cases and six steps per case
 - Deterministic step numbering derived from model-provided list order
+- Required model preconditions and exact acceptance-criterion traceability
 
 The fake provider intentionally uses fixed templates rather than simulating AI
 quality. Its purpose is to exercise the application workflow reliably. The
@@ -65,7 +66,7 @@ output directory:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.4 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.5 `
   --provider ollama
 ```
 
@@ -79,6 +80,13 @@ but unnumbered. After validation, the application assigns `1, 2, 3...` from
 list position while building the public `TestSuite`. This is deterministic
 derivation, not silent repair: semantic fields still must satisfy the strict
 provider and service contracts.
+
+For model-backed output, every case must include a precondition and at least one
+exact source citation. The service rejects citations that are not complete
+acceptance criteria from the request and rejects a suite that leaves any
+authoritative criterion uncited. Exact citation proves traceability, although it
+does not by itself prove that every generated claim is supported; the advisory
+quality gate and human review still evaluate that broader grounding question.
 
 ## Generate test cases
 

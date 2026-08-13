@@ -59,6 +59,7 @@ def make_suite() -> SuiteModel:
                 category=Category.FUNCTIONAL,
                 priority=Priority.HIGH,
                 objective="Verify the primary reset workflow.",
+                preconditions=["A registered account exists."],
                 steps=[
                     StepModel(
                         number=1,
@@ -84,6 +85,7 @@ def make_model_suite() -> ModelTestSuite:
                 category=Category.FUNCTIONAL,
                 priority=Priority.HIGH,
                 objective="Verify the primary reset workflow.",
+                preconditions=["A registered account exists."],
                 steps=[
                     ModelTestStep(
                         action="Request a reset link.",

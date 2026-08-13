@@ -41,12 +41,16 @@ def make_case(case_id: str, category: Category) -> CaseModel:
         category=category,
         priority=Priority.MEDIUM,
         objective="Exercise the requested behavior.",
+        preconditions=["The system is available for testing."],
         steps=[
             StepModel(
                 number=1,
                 action="Perform an action.",
                 expected_result="Observe the result.",
             )
+        ],
+        source_requirements=[
+            "As a user, I want to reset my password to regain access."
         ],
     )
 
@@ -111,3 +115,54 @@ def test_multiple_cases_in_a_requested_category_are_allowed() -> None:
 
     assert len(result.test_cases) == 2
 
+
+def test_unsupported_source_requirement_is_rejected() -> None:
+    request = make_request(Category.FUNCTIONAL)
+    case = make_case("TC-001", Category.FUNCTIONAL)
+    case.source_requirements = ["A prompt instruction, not a requirement."]
+    suite = SuiteModel(source_story_id="US-001", test_cases=[case])
+
+    with pytest.raises(ProviderContractError, match="unsupported source"):
+        GenerationService(StubProvider(suite)).generate(request)
+
+
+def test_uncited_authoritative_requirement_is_rejected() -> None:
+    request = GenerationRequest(
+        story=UserStory(
+            id="US-001",
+            title="Reset a password",
+            narrative="As a user, I want to reset my password.",
+            acceptance_criteria=["A reset link expires.", "A link is single-use."],
+        ),
+        categories=[Category.FUNCTIONAL],
+    )
+    case = make_case("TC-001", Category.FUNCTIONAL)
+    case.source_requirements = ["A reset link expires."]
+    suite = SuiteModel(source_story_id="US-001", test_cases=[case])
+
+    with pytest.raises(ProviderContractError, match="1 authoritative"):
+        GenerationService(StubProvider(suite)).generate(request)
+
+
+def test_exact_citations_cover_all_authoritative_requirements() -> None:
+    request = GenerationRequest(
+        story=UserStory(
+            id="US-001",
+            title="Reset a password",
+            narrative="As a user, I want to reset my password.",
+            acceptance_criteria=["A reset link expires.", "A link is single-use."],
+        ),
+        categories=[Category.FUNCTIONAL],
+    )
+    first_case = make_case("TC-001", Category.FUNCTIONAL)
+    first_case.source_requirements = ["A reset link expires."]
+    second_case = make_case("TC-002", Category.FUNCTIONAL)
+    second_case.source_requirements = ["A link is single-use."]
+    suite = SuiteModel(
+        source_story_id="US-001",
+        test_cases=[first_case, second_case],
+    )
+
+    result = GenerationService(StubProvider(suite)).generate(request)
+
+    assert len(result.test_cases) == 2

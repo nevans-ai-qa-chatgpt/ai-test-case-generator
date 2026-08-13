@@ -24,6 +24,7 @@ class GenerationService:
         suite = self._provider.generate(request)
         self._validate_source_story(request, suite)
         self._validate_categories(request, suite)
+        self._validate_traceability(request, suite)
         return suite
 
     @staticmethod
@@ -55,7 +56,36 @@ class GenerationService:
         if problems:
             raise ProviderContractError("; ".join(problems))
 
+    @staticmethod
+    def _validate_traceability(
+        request: GenerationRequest,
+        suite: TestSuite,
+    ) -> None:
+        authoritative = set(
+            request.story.acceptance_criteria or [request.story.narrative]
+        )
+        cited: set[str] = set()
+        problems: list[str] = []
+
+        for test_case in suite.test_cases:
+            if not test_case.source_requirements:
+                problems.append(f"{test_case.id} has no source requirements")
+                continue
+            unsupported = set(test_case.source_requirements) - authoritative
+            if unsupported:
+                problems.append(
+                    f"{test_case.id} cites unsupported source requirements"
+                )
+            cited.update(set(test_case.source_requirements) & authoritative)
+
+        missing = authoritative - cited
+        if missing:
+            problems.append(
+                f"{len(missing)} authoritative requirement(s) are not cited"
+            )
+        if problems:
+            raise ProviderContractError("; ".join(problems))
+
 
 def _category_names(categories: set[object]) -> str:
     return ", ".join(sorted(str(category) for category in categories))
-

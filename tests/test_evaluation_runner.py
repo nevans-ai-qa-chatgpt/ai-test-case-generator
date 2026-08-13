@@ -285,3 +285,50 @@ def test_recorded_auto_numbered_qwen_canary_matches_the_run_contract() -> None:
         [step.number for step in case.steps] == list(range(1, len(case.steps) + 1))
         for case in suite.test_cases
     )
+
+
+def test_recorded_grounded_qwen_canary_matches_the_run_contract() -> None:
+    run_dir = (
+        Path(__file__).parents[1]
+        / "evals"
+        / "runs"
+        / "qwen3-4b-prompt-v1.5"
+    )
+
+    manifest = EvaluationRunManifest.model_validate_json(
+        (run_dir / "run.json").read_text(encoding="utf-8")
+    )
+    result = EvaluationCaseResult.model_validate_json(
+        (run_dir / "cases" / "EVAL-001" / "result.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    suite = SuiteModel.model_validate_json(
+        (run_dir / "cases" / "EVAL-001" / "suite.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    quality_data = json.loads(
+        (run_dir / "cases" / "EVAL-001" / "quality.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    authoritative = {
+        "A registered user receives a reset link that is valid for 30 minutes.",
+        "An unregistered email address receives the same visible confirmation, but no reset email is sent.",
+        "A reset link can be used only once.",
+        "The new password must satisfy the configured password policy.",
+    }
+    cited = {
+        requirement
+        for case in suite.test_cases
+        for requirement in case.source_requirements
+    }
+
+    assert manifest.prompt_version == "1.5"
+    assert result.status == "completed"
+    assert result.token_usage is not None
+    assert result.token_usage.total_tokens == 2850
+    assert result.quality_findings_count == len(quality_data["findings"]) == 9
+    assert all(case.preconditions for case in suite.test_cases)
+    assert cited == authoritative

@@ -125,6 +125,37 @@ The canary therefore proves that deterministic numbering removed the structural
 failure, not that Qwen output is ready for unattended use. The full dataset run
 remains paused until the next quality-focused decision.
 
+Prompt v1.5 is the controlled grounding follow-up. Model-backed cases must now
+contain at least one precondition and one source citation. The service accepts a
+citation only when it exactly matches a complete acceptance criterion (or the
+complete narrative when no criteria exist), and it requires every authoritative
+requirement to be cited somewhere in the suite. The prompt also states that
+requested categories do not authorize invented behavior and explicitly forbids
+unsupported examples, navigation, and prompt text used as traceability.
+
+The v1.5 `EVAL-001` canary completed in 310.0 seconds using 1,174 input
+tokens and 1,676 output tokens. It passed the new contract: all six cases have
+preconditions, every citation exactly matches request text, and all four
+acceptance criteria are cited. Automated findings decreased only from 10 to 9.
+
+Manual review shows no meaningful semantic-quality gain:
+
+- TC-001 invents a `Forgot Password` label and a `3-30 minutes` interval.
+- TC-002 invents exact confirmation wording.
+- TC-003 assumes a redirect and an unspecified error message.
+- TC-004 still invents six- and eight-character password examples and remains
+  incorrectly classified as edge behavior.
+- TC-005 still invents malformed-email validation despite citing unrelated
+  reset-link requirements.
+- TC-006 invents clock times and a 31-minute value.
+- Several preconditions themselves assume undocumented validation mechanisms or
+  policy details.
+
+Exact citations prevent fabricated traceability, but a small model can still
+attach unsupported claims to valid citations. Prompt hardening has reached
+diminishing returns for this canary. Keep the full Qwen run paused; the next
+useful comparison should hold prompt v1.5 constant and test a stronger model.
+
 ## Review rubric
 
 Evaluate each generated suite on five dimensions:

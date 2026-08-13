@@ -31,12 +31,12 @@ class ModelTestCase(StrictModel):
     category: TestCategory
     priority: Priority
     objective: str = Field(min_length=1)
-    preconditions: list[str] = Field(default_factory=list)
+    preconditions: list[str] = Field(min_length=1)
     steps: list[ModelTestStep] = Field(
         min_length=1,
         max_length=MAX_STEPS_PER_CASE,
     )
-    source_requirements: list[str] = Field(default_factory=list)
+    source_requirements: list[str] = Field(min_length=1)
     tags: list[str] = Field(default_factory=list)
 
     def to_test_case(self) -> TestCase:

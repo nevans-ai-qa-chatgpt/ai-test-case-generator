@@ -64,3 +64,15 @@ def test_model_schema_preserves_generation_bounds() -> None:
     assert schema["properties"]["test_cases"]["maxItems"] == 6
     assert schema["$defs"]["ModelTestCase"]["properties"]["steps"]["maxItems"] == 6
     assert "number" not in schema["$defs"]["ModelTestStep"]["properties"]
+    case_properties = schema["$defs"]["ModelTestCase"]["properties"]
+    assert case_properties["preconditions"]["minItems"] == 1
+    assert case_properties["source_requirements"]["minItems"] == 1
+
+
+@pytest.mark.parametrize("field_name", ["preconditions", "source_requirements"])
+def test_model_case_requires_grounding_metadata(field_name: str) -> None:
+    case_data = make_model_case().model_dump(mode="json")
+    case_data[field_name] = []
+
+    with pytest.raises(ValidationError, match="at least 1 item"):
+        ModelTestCase.model_validate(case_data)
