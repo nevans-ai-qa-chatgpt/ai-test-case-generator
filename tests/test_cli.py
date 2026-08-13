@@ -226,3 +226,32 @@ def test_quality_report_cannot_replace_the_generated_suite(
     assert exit_code == 2
     assert not output_path.exists()
     assert "must differ" in capsys.readouterr().err
+
+
+def test_validate_evals_reports_dataset_summary(capsys) -> None:
+    dataset_path = Path(__file__).parents[1] / "evals" / "dataset.json"
+
+    exit_code = main(["validate-evals", "--dataset", str(dataset_path)])
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert "valid (8 cases" in output
+    assert "edge=7" in output
+    assert "functional=8" in output
+    assert "negative=6" in output
+
+
+def test_validate_evals_rejects_an_invalid_dataset(
+    tmp_path: Path,
+    capsys,
+) -> None:
+    dataset_path = tmp_path / "invalid.json"
+    dataset_path.write_text(
+        '{"schema_version": "1.0", "cases": []}',
+        encoding="utf-8",
+    )
+
+    exit_code = main(["validate-evals", "--dataset", str(dataset_path)])
+
+    assert exit_code == 2
+    assert "validation error" in capsys.readouterr().err

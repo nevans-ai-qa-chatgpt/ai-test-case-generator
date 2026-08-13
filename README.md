@@ -11,7 +11,7 @@ therefore accept and return explicit Pydantic models rather than free-form
 text. This makes results machine-readable, rejectable when malformed, and
 testable without calling an AI service.
 
-## Current milestone: Local and hosted model providers
+## Current milestone: Representative evaluation dataset
 
 The repository currently defines:
 
@@ -26,6 +26,8 @@ The repository currently defines:
 - A safe command-line workflow using versionable JSON request and result files
 - An opt-in OpenAI Responses provider using Pydantic Structured Outputs
 - An opt-in Ollama provider for private, per-call-free local generation
+- A versioned eight-case evaluation dataset with an independent review rubric
+- Offline dataset validation that makes no model calls
 
 The fake provider intentionally uses fixed templates rather than simulating AI
 quality. Its purpose is to exercise the application workflow reliably. The
@@ -35,6 +37,15 @@ unrequested categories instead of silently repairing model output.
 Model-backed output is also reviewed against the grounding and executability
 rubric in [`evals/README.md`](evals/README.md). Prompt changes are versioned and
 compared against preserved outputs from the same representative requests.
+
+Validate the full evaluation corpus before a model run:
+
+```powershell
+ai-test-cases validate-evals --dataset evals/dataset.json
+```
+
+This checks structure, identifiers, requested categories, and review metadata;
+it does not generate test cases, use tokens, or incur an API charge.
 
 ## Generate test cases
 
@@ -160,4 +171,6 @@ pytest
 4. File-based command-line interface (complete)
 5. OpenAI provider integration (mock-tested; live test deferred)
 6. Local Ollama provider integration (complete)
-7. Evaluation dataset, CI, and portfolio documentation
+7. Representative evaluation dataset (complete)
+8. Resumable evaluation runner and cross-case quality calibration
+9. CI and portfolio documentation

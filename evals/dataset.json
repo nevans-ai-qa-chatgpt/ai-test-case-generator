@@ -1,0 +1,229 @@
+{
+  "schema_version": "1.0",
+  "cases": [
+    {
+      "id": "EVAL-001",
+      "purpose": "Security and privacy behavior with explicit time and state-transition requirements.",
+      "request": {
+        "story": {
+          "id": "US-EVAL-001",
+          "title": "Reset a forgotten password",
+          "narrative": "As a user, I want to reset a forgotten password so that I can regain access to my account.",
+          "acceptance_criteria": [
+            "A registered user receives a reset link that is valid for 30 minutes.",
+            "An unregistered email address receives the same visible confirmation, but no reset email is sent.",
+            "A reset link can be used only once.",
+            "The new password must satisfy the configured password policy."
+          ]
+        },
+        "categories": ["functional", "negative", "edge"]
+      },
+      "review_assertions": [
+        "Covers registered and unregistered email behavior without exposing account existence.",
+        "Uses the supplied 30-minute expiry and exercises the single-use transition.",
+        "Treats password-policy rejection as negative behavior rather than inventing policy rules."
+      ],
+      "forbidden_assumptions": [
+        "Exact confirmation message wording.",
+        "Specific password length or composition rules.",
+        "A delivery-time guarantee for the reset email."
+      ],
+      "tags": ["security", "privacy", "state-transition", "explicit-number"]
+    },
+    {
+      "id": "EVAL-002",
+      "purpose": "Inclusive numeric boundaries where every limit is supplied by the requirements.",
+      "request": {
+        "story": {
+          "id": "US-EVAL-002",
+          "title": "Change a cart item quantity",
+          "narrative": "As a shopper, I want to change an item's quantity in my cart so that I can buy the amount I need.",
+          "acceptance_criteria": [
+            "The allowed quantity is from 1 through 10, inclusive.",
+            "Increasing or decreasing a valid quantity updates the cart subtotal.",
+            "A quantity below 1 or above 10 is rejected and leaves the cart unchanged."
+          ]
+        },
+        "categories": ["functional", "negative", "edge"]
+      },
+      "review_assertions": [
+        "Covers both accepted boundaries, 1 and 10.",
+        "Covers values immediately outside the range without flagging supplied numbers as invented.",
+        "Verifies the observable subtotal and unchanged-cart outcomes."
+      ],
+      "forbidden_assumptions": [
+        "Inventory availability or stock limits.",
+        "A particular currency or product price.",
+        "Automatic removal of an item when quantity is zero."
+      ],
+      "tags": ["boundary", "explicit-number", "calculation", "state-preservation"]
+    },
+    {
+      "id": "EVAL-003",
+      "purpose": "File constraints with units, type allowlists, and an exact-size boundary.",
+      "request": {
+        "story": {
+          "id": "US-EVAL-003",
+          "title": "Upload a support attachment",
+          "narrative": "As a customer, I want to attach a file to a support request so that I can provide evidence of my issue.",
+          "acceptance_criteria": [
+            "PDF and PNG files are accepted.",
+            "A file of exactly 5 MB is accepted, and a file larger than 5 MB is rejected.",
+            "A rejected file is not attached to the support request.",
+            "Only one attachment is allowed per support request."
+          ]
+        },
+        "categories": ["functional", "negative", "edge"]
+      },
+      "review_assertions": [
+        "Covers both supported types and an unsupported type.",
+        "Distinguishes exactly 5 MB from a value just above 5 MB.",
+        "Verifies that rejected files do not alter attachment state."
+      ],
+      "forbidden_assumptions": [
+        "Virus-scanning behavior.",
+        "Image dimension or PDF page-count limits.",
+        "A specific upload progress indicator or error message."
+      ],
+      "tags": ["file-upload", "boundary", "units", "allowlist", "state-preservation"]
+    },
+    {
+      "id": "EVAL-004",
+      "purpose": "Security state transitions involving counters, time windows, and lock duration.",
+      "request": {
+        "story": {
+          "id": "US-EVAL-004",
+          "title": "Lock an account after failed sign-in attempts",
+          "narrative": "As a security administrator, I want repeated failed sign-ins to lock an account so that automated guessing is limited.",
+          "acceptance_criteria": [
+            "Five consecutive failed sign-in attempts within 10 minutes lock the account for 15 minutes.",
+            "A successful sign-in before the fifth failure resets the failed-attempt count.",
+            "A sign-in attempt while locked is rejected and does not extend the lock duration."
+          ]
+        },
+        "categories": ["functional", "negative", "edge"]
+      },
+      "review_assertions": [
+        "Covers the transition from the fourth to the fifth consecutive failure.",
+        "Covers counter reset after a successful sign-in.",
+        "Covers the 15-minute expiry without changing it after an attempt while locked."
+      ],
+      "forbidden_assumptions": [
+        "CAPTCHA or multi-factor authentication behavior.",
+        "Administrator notifications or audit-log contents.",
+        "Progressive lock durations for later failures."
+      ],
+      "tags": ["security", "state-transition", "time-boundary", "explicit-number"]
+    },
+    {
+      "id": "EVAL-005",
+      "purpose": "Time-zone conversion and daylight-saving transitions without negative cases.",
+      "request": {
+        "story": {
+          "id": "US-EVAL-005",
+          "title": "Schedule an appointment across time zones",
+          "narrative": "As a client, I want appointment times shown in my selected time zone so that I arrive at the correct time.",
+          "acceptance_criteria": [
+            "Appointments are stored as UTC and displayed in the client's selected IANA time zone.",
+            "A local time that does not exist during a daylight-saving transition cannot be selected.",
+            "When a local time occurs twice, the client must select the intended UTC offset before saving."
+          ]
+        },
+        "categories": ["functional", "edge"]
+      },
+      "review_assertions": [
+        "Covers conversion from stored UTC to a selected IANA time zone.",
+        "Treats nonexistent and repeated local times as daylight-saving boundaries.",
+        "Requires offset selection only for a repeated local time."
+      ],
+      "forbidden_assumptions": [
+        "A particular country, city, or daylight-saving date.",
+        "Automatic selection of one offset for a repeated time.",
+        "Calendar invitation or reminder behavior."
+      ],
+      "tags": ["time-zone", "daylight-saving", "boundary", "category-subset"]
+    },
+    {
+      "id": "EVAL-006",
+      "purpose": "Role-based authorization with ownership and an approval threshold.",
+      "request": {
+        "story": {
+          "id": "US-EVAL-006",
+          "title": "Approve an invoice",
+          "narrative": "As an accounts-payable user, I want invoices routed to authorized approvers so that spending controls are enforced.",
+          "acceptance_criteria": [
+            "A requester can submit an invoice but cannot approve their own invoice.",
+            "An approver can approve an invoice totaling up to and including $5,000.",
+            "An invoice totaling more than $5,000 requires a senior approver.",
+            "A rejected authorization attempt leaves the invoice status unchanged."
+          ]
+        },
+        "categories": ["functional", "negative", "edge"]
+      },
+      "review_assertions": [
+        "Covers self-approval denial independently of the amount threshold.",
+        "Covers both sides of the $5,000 authorization boundary.",
+        "Verifies that an unauthorized attempt does not change invoice state."
+      ],
+      "forbidden_assumptions": [
+        "Additional employee roles or approval levels.",
+        "Tax, currency-conversion, or payment behavior.",
+        "Email notifications after approval."
+      ],
+      "tags": ["authorization", "ownership", "currency-boundary", "state-preservation"]
+    },
+    {
+      "id": "EVAL-007",
+      "purpose": "Percentage and currency rules with precedence and a minimum-spend boundary.",
+      "request": {
+        "story": {
+          "id": "US-EVAL-007",
+          "title": "Apply a promotional code",
+          "narrative": "As a shopper, I want to apply a promotional code so that an eligible order receives its discount.",
+          "acceptance_criteria": [
+            "Code SUMMER20 discounts the merchandise subtotal by 20% when that subtotal is at least $100.",
+            "Shipping and tax are excluded from both the eligibility calculation and the discount.",
+            "An expired or unknown code is rejected without changing the order total.",
+            "Only one promotional code can be applied to an order."
+          ]
+        },
+        "categories": ["functional", "negative", "edge"]
+      },
+      "review_assertions": [
+        "Covers eligibility immediately below and exactly at the $100 boundary.",
+        "Calculates 20% from merchandise only, excluding shipping and tax.",
+        "Covers invalid codes and a second code without changing an ineligible total."
+      ],
+      "forbidden_assumptions": [
+        "Rounding rules not demonstrated by the supplied amounts.",
+        "A fixed shipping or tax amount.",
+        "Stacking behavior beyond the one-code limit."
+      ],
+      "tags": ["calculation", "percentage", "currency-boundary", "precedence"]
+    },
+    {
+      "id": "EVAL-008",
+      "purpose": "Sparse input that tests restraint when no acceptance criteria are supplied.",
+      "request": {
+        "story": {
+          "id": "US-EVAL-008",
+          "title": "Bookmark an article",
+          "narrative": "As a reader, I want to bookmark an article so that I can return to it later.",
+          "acceptance_criteria": []
+        },
+        "categories": ["functional"]
+      },
+      "review_assertions": [
+        "Produces a minimal functional workflow supported by the narrative.",
+        "Uses observable bookmark creation and later access without fabricating detailed policy.",
+        "Does not manufacture negative or edge cases that were not requested."
+      ],
+      "forbidden_assumptions": [
+        "A sign-in requirement.",
+        "Cross-device synchronization or offline availability.",
+        "Bookmark limits, folders, labels, or retention periods."
+      ],
+      "tags": ["sparse-requirements", "grounding", "category-subset"]
+    }
+  ]
+}

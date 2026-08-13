@@ -3,6 +3,30 @@
 This directory preserves representative model outputs so prompt changes can be
 compared against the same input instead of judged from memory.
 
+## Representative dataset
+
+`dataset.json` contains eight versioned inputs chosen to expose different
+failure modes: security and privacy, numeric boundaries, file constraints,
+state transitions, daylight-saving time, role authorization, discount math,
+and restraint when requirements are sparse. Each case contains two kinds of
+data that are intentionally kept separate:
+
+- `request` is the only content sent to a generation provider.
+- `review_assertions` and `forbidden_assumptions` are the independent rubric
+  used by a human reviewer; they must never be included in the model prompt.
+
+Validate the dataset without loading or calling any model:
+
+```powershell
+ai-test-cases validate-evals --dataset evals/dataset.json
+```
+
+The first full-dataset run should preserve one output and one quality report per
+case, along with the provider, model, prompt version, token counts, and runtime.
+Run one model configuration at a time so differences can be attributed to a
+controlled change. The current password-reset artifacts predate this dataset
+layout and remain as historical evidence.
+
 ## Review rubric
 
 Evaluate each generated suite on five dimensions:

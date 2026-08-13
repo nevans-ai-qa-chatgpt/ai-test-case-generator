@@ -4,11 +4,13 @@ import argparse
 import json
 import os
 import sys
+from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
 
 from pydantic import ValidationError
 
+from ai_test_case_generator.evaluation import load_evaluation_dataset
 from ai_test_case_generator.models import GenerationRequest
 from ai_test_case_generator.providers import (
     FakeTestCaseProvider,
@@ -102,6 +104,17 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Optional path for the advisory quality report JSON.",
     )
+
+    validate_evals = subparsers.add_parser(
+        "validate-evals",
+        help="Validate an evaluation dataset without calling a model.",
+    )
+    validate_evals.add_argument(
+        "--dataset",
+        type=Path,
+        required=True,
+        help="Path to an EvaluationDataset JSON file.",
+    )
     return parser
 
 
@@ -123,6 +136,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 force=args.force,
                 quality_report_path=args.quality_report,
             )
+        elif args.command == "validate-evals":
+            _validate_evals(args.dataset)
     except (CliError, OSError, json.JSONDecodeError, ValidationError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
@@ -134,6 +149,28 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 4
 
     return 0
+
+
+def _validate_evals(dataset_path: Path) -> None:
+    dataset = load_evaluation_dataset(dataset_path)
+    category_counts = Counter(
+        category.value
+        for case in dataset.cases
+        for category in case.request.categories
+    )
+    tag_count = len({tag for case in dataset.cases for tag in case.tags})
+
+    print(
+        f"evaluation dataset: valid ({len(dataset.cases)} cases, "
+        f"{tag_count} distinct tags)"
+    )
+    print(
+        "requested categories: "
+        + ", ".join(
+            f"{category}={count}"
+            for category, count in sorted(category_counts.items())
+        )
+    )
 
 
 def _generate(

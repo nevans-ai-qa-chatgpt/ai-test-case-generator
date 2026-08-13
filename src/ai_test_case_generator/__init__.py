@@ -1,5 +1,10 @@
 """AI Test Case Generator domain package."""
 
+from ai_test_case_generator.evaluation import (
+    EvaluationCase,
+    EvaluationDataset,
+    load_evaluation_dataset,
+)
 from ai_test_case_generator.models import (
     GenerationRequest,
     Priority,
@@ -12,6 +17,8 @@ from ai_test_case_generator.models import (
 from ai_test_case_generator.service import GenerationService, ProviderContractError
 
 __all__ = [
+    "EvaluationCase",
+    "EvaluationDataset",
     "GenerationRequest",
     "GenerationService",
     "Priority",
@@ -21,4 +28,5 @@ __all__ = [
     "TestStep",
     "TestSuite",
     "UserStory",
+    "load_evaluation_dataset",
 ]
