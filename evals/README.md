@@ -167,17 +167,23 @@ and CPU-only hardware. The timeout ceiling was raised from 600 to 900 seconds
 only so the slower model could return a result; it is recorded in `run.json`
 and is not treated as an equivalent operational budget.
 
-Gemma returned after 653.9 seconds, exceeding the Qwen run's 600-second ceiling,
-and the service rejected its suite because TC-006 cited text that was not an
-exact acceptance criterion. The runner therefore correctly records a failed
-`ProviderContractError` result and does not write `suite.json` or
-`quality.json` for an invalid suite. Token usage and advisory finding counts are
-unavailable because generation did not cross the service boundary.
+The original Gemma run returned after 653.9 seconds, exceeding the Qwen run's
+600-second ceiling, and the service rejected its suite because TC-006 cited
+text that was not an exact acceptance criterion. After failure-response capture
+was added, a controlled retry reproduced the same error in 614.4 seconds and
+preserved the generated JSON in `raw_response.txt`. TC-006 cites an empty
+string and invents both empty-email submission behavior and a required-field
+error that are absent from the request.
+
+The runner correctly records a failed `ProviderContractError` result and does
+not write `suite.json` or `quality.json` for the invalid suite. Token usage and
+advisory finding counts are unavailable because generation did not cross the
+service boundary.
 
 | Model | Contract result | Duration | Relative duration |
 | --- | --- | ---: | ---: |
 | `qwen3:4b-instruct` | Pass; 9 advisory findings | 310.0 s | 1.00x |
-| `gemma3:12b` | Fail; unsupported citation | 653.9 s | 2.11x |
+| `gemma3:12b` | Fail; empty unsupported citation | 614.4 s | 1.98x |
 
 This canary does not support switching the local default to Gemma. Qwen remains
 the faster development model and is the only one of the two that passes the

@@ -1,0 +1,159 @@
+{
+  "source_story_id": "US-EVAL-001",
+  "test_cases": [
+    {
+      "id": "TC-001",
+      "title": "Reset Password - Registered User Receives Valid Link",
+      "category": "functional",
+      "priority": "high",
+      "objective": "Verify a registered user receives a valid password reset link.",
+      "preconditions": [
+        "User 'testuser@example.com' is a registered user."
+      ],
+      "steps": [
+        {
+          "action": "Navigate to the 'Forgot Password' page.",
+          "expected_result": "The 'Forgot Password' page is displayed."
+        },
+        {
+          "action": "Enter 'testuser@example.com' in the email address field and submit the request.",
+          "expected_result": "A password reset link is sent to 'testuser@example.com'."
+        },
+        {
+          "action": "Check email inbox for 'testuser@example.com'.",
+          "expected_result": "An email containing a password reset link is received."
+        },
+        {
+          "action": "Click the password reset link.",
+          "expected_result": "The user is redirected to the password reset page."
+        }
+      ],
+      "source_requirements": [
+        "A registered user receives a reset link that is valid for 30 minutes."
+      ],
+      "tags": []
+    },
+    {
+      "id": "TC-002",
+      "title": "Reset Password - Unregistered Email Receives Confirmation Message",
+      "category": "negative",
+      "priority": "medium",
+      "objective": "Verify an unregistered email address receives a confirmation message but no reset link.",
+      "preconditions": [
+        "Email address 'unregistered@example.com' is not registered."
+      ],
+      "steps": [
+        {
+          "action": "Navigate to the 'Forgot Password' page.",
+          "expected_result": "The 'Forgot Password' page is displayed."
+        },
+        {
+          "action": "Enter 'unregistered@example.com' in the email address field and submit the request.",
+          "expected_result": "A confirmation message is displayed on the page indicating that a password reset has been initiated, but no email is sent."
+        }
+      ],
+      "source_requirements": [
+        "An unregistered email address receives the same visible confirmation, but no reset email is sent."
+      ],
+      "tags": []
+    },
+    {
+      "id": "TC-003",
+      "title": "Reset Password - Link Can Be Used Only Once",
+      "category": "edge",
+      "priority": "high",
+      "objective": "Verify a reset link can be used only once.",
+      "preconditions": [
+        "User 'testuser2@example.com' is registered.",
+        "A password reset link has been sent to 'testuser2@example.com'."
+      ],
+      "steps": [
+        {
+          "action": "Click the received password reset link.",
+          "expected_result": "The user is redirected to the password reset page and can set a new password."
+        },
+        {
+          "action": "Attempt to use the same password reset link again.",
+          "expected_result": "An error message indicates that the link has expired or cannot be used again."
+        }
+      ],
+      "source_requirements": [
+        "A reset link can be used only once."
+      ],
+      "tags": []
+    },
+    {
+      "id": "TC-004",
+      "title": "Reset Password - New Password Must Satisfy Policy",
+      "category": "negative",
+      "priority": "high",
+      "objective": "Verify the new password must satisfy the configured password policy.",
+      "preconditions": [
+        "User 'testuser3@example.com' is registered.",
+        "A password reset link has been sent to 'testuser3@example.com'."
+      ],
+      "steps": [
+        {
+          "action": "Click the received password reset link.",
+          "expected_result": "The user is redirected to the password reset page."
+        },
+        {
+          "action": "Enter a new password that violates the configured password policy (e.g., too short, contains invalid characters).",
+          "expected_result": "An error message indicates that the password does not meet the required criteria."
+        }
+      ],
+      "source_requirements": [
+        "The new password must satisfy the configured password policy."
+      ],
+      "tags": []
+    },
+    {
+      "id": "TC-005",
+      "title": "Reset Password - Link Expiration Time",
+      "category": "edge",
+      "priority": "medium",
+      "objective": "Verify the password reset link expires after 30 minutes.",
+      "preconditions": [
+        "User 'testuser4@example.com' is registered."
+      ],
+      "steps": [
+        {
+          "action": "Navigate to the 'Forgot Password' page.",
+          "expected_result": "The 'Forgot Password' page is displayed."
+        },
+        {
+          "action": "Enter 'testuser4@example.com' and request a password reset link.",
+          "expected_result": "A password reset link is sent to 'testuser4@example.com'."
+        },
+        {
+          "action": "Wait for more than 30 minutes after receiving the email.",
+          "expected_result": "The password reset link no longer works and displays an error message."
+        }
+      ],
+      "source_requirements": [
+        "A registered user receives a reset link that is valid for 30 minutes."
+      ],
+      "tags": []
+    },
+    {
+      "id": "TC-006",
+      "title": "Reset Password - Empty Email Field",
+      "category": "negative",
+      "priority": "medium",
+      "objective": "Verify the system handles an empty email field correctly.",
+      "preconditions": [
+        "User is on the 'Forgot Password' page."
+      ],
+      "steps": [
+        {
+          "action": "Leave the email address field empty and submit the request.",
+          "expected_result": "An error message indicates that the email address field is required."
+        }
+      ],
+      "source_requirements": [
+        ""
+      ],
+      "tags": []
+    }
+  ]
+}

@@ -412,3 +412,12 @@ def test_recorded_grounded_gemma_canary_preserves_contract_failure() -> None:
     assert result.quality_findings_count is None
     assert not (case_dir / "suite.json").exists()
     assert not (case_dir / "quality.json").exists()
+    raw_response = json.loads(
+        (case_dir / "raw_response.txt").read_text(encoding="utf-8")
+    )
+    tc_006 = next(
+        test_case
+        for test_case in raw_response["test_cases"]
+        if test_case["id"] == "TC-006"
+    )
+    assert tc_006["source_requirements"] == [""]
