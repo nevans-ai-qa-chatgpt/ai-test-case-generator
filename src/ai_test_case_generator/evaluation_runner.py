@@ -208,6 +208,7 @@ class EvaluationRunner:
     def _run_case(self, evaluation_case: EvaluationCase) -> bool:
         case_dir = self._case_dir(evaluation_case)
         case_dir.mkdir(parents=True, exist_ok=True)
+        raw_response_path = case_dir / "raw_response.txt"
         started_at = datetime.now(UTC)
         started_timer = perf_counter()
 
@@ -215,6 +216,11 @@ class EvaluationRunner:
             suite = self._service.generate(evaluation_case.request)
             quality = evaluate_quality(evaluation_case.request, suite)
         except (ProviderError, ProviderContractError) as error:
+            raw_response = getattr(self._provider, "last_raw_response", None)
+            if isinstance(raw_response, str) and raw_response:
+                _write_text_atomic(raw_response_path, raw_response)
+            else:
+                raw_response_path.unlink(missing_ok=True)
             result = EvaluationCaseResult(
                 evaluation_id=evaluation_case.id,
                 source_story_id=evaluation_case.request.story.id,
@@ -244,6 +250,7 @@ class EvaluationRunner:
         _write_model_atomic(case_dir / "suite.json", suite)
         _write_model_atomic(case_dir / "quality.json", quality)
         _write_model_atomic(case_dir / "result.json", result)
+        raw_response_path.unlink(missing_ok=True)
         print(
             f"[{evaluation_case.id}] completed in {duration:.1f}s "
             f"({len(quality.findings)} quality finding(s))"
@@ -263,6 +270,13 @@ def _write_model_atomic(path: Path, model: StrictModel) -> None:
         ensure_ascii=False,
     ) + "\n"
     temporary_path.write_text(output, encoding="utf-8")
+    temporary_path.replace(path)
+
+
+def _write_text_atomic(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_name(f".{path.name}.tmp")
+    temporary_path.write_text(content, encoding="utf-8")
     temporary_path.replace(path)
 
 

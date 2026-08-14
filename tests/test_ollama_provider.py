@@ -163,8 +163,9 @@ def test_prompt_separates_instructions_from_request_data() -> None:
 
 
 def test_invalid_model_json_reports_safe_validation_locations() -> None:
+    raw_response = json.dumps({"wrong": True})
     transport = RecordingTransport(
-        {"message": {"role": "assistant", "content": json.dumps({"wrong": True})}}
+        {"message": {"role": "assistant", "content": raw_response}}
     )
     provider = OllamaTestCaseProvider(transport=transport)
 
@@ -175,6 +176,7 @@ def test_invalid_model_json_reports_safe_validation_locations() -> None:
         provider.generate(make_request())
 
     assert "wrong" not in str(error.value)
+    assert provider.last_raw_response == raw_response
 
 
 def test_transport_failure_is_wrapped_without_exposing_details() -> None:

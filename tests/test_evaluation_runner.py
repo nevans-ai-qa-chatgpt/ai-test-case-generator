@@ -61,6 +61,30 @@ class UsageFakeProvider(FakeTestCaseProvider):
     last_usage = TokenUsage(input_tokens=100, output_tokens=50, total_tokens=150)
 
 
+class RawContractFailureOnceProvider:
+    name = "fake"
+
+    def __init__(self) -> None:
+        self._failed = False
+        self._delegate = FakeTestCaseProvider()
+        self.last_raw_response: str | None = None
+
+    def generate(self, request: GenerationRequest) -> SuiteModel:
+        self.last_raw_response = None
+        suite = self._delegate.generate(request)
+        if self._failed:
+            return suite
+
+        self._failed = True
+        self.last_raw_response = '{"generated":"unsupported citation"}'
+        invalid_case = suite.test_cases[0].model_copy(
+            update={"source_requirements": ["An invented requirement."]}
+        )
+        return suite.model_copy(
+            update={"test_cases": [invalid_case, *suite.test_cases[1:]]}
+        )
+
+
 def test_runner_writes_manifest_suite_quality_and_result(tmp_path: Path) -> None:
     runner = make_runner(tmp_path, UsageFakeProvider())
 
@@ -136,6 +160,31 @@ def test_runner_records_failure_continues_and_retries_on_resume(
     assert second_summary.completed == 1
     assert second_summary.skipped == 2
     assert retried_result.status == "completed"
+
+
+def test_runner_preserves_failed_raw_response_and_removes_it_after_retry(
+    tmp_path: Path,
+) -> None:
+    provider = RawContractFailureOnceProvider()
+    runner = make_runner(tmp_path, provider)
+    case_dir = tmp_path / "run" / "cases" / "EVAL-001"
+    raw_response_path = case_dir / "raw_response.txt"
+
+    first_summary = runner.run(case_ids=["EVAL-001"])
+    failed_result = EvaluationCaseResult.model_validate_json(
+        (case_dir / "result.json").read_text(encoding="utf-8")
+    )
+
+    assert first_summary.failed == 1
+    assert failed_result.error_type == "ProviderContractError"
+    assert raw_response_path.read_text(encoding="utf-8") == (
+        '{"generated":"unsupported citation"}'
+    )
+
+    second_summary = runner.run(case_ids=["EVAL-001"])
+
+    assert second_summary.completed == 1
+    assert not raw_response_path.exists()
 
 
 def test_runner_preserves_progress_across_keyboard_interrupt(

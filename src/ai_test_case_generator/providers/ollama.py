@@ -68,9 +68,12 @@ class OllamaTestCaseProvider:
         self.timeout = timeout
         self._transport = transport or _UrllibJsonTransport()
         self.last_usage: TokenUsage | None = None
+        self.last_raw_response: str | None = None
 
     def generate(self, request: GenerationRequest) -> TestSuite:
         """Request structured JSON from Ollama and validate it locally."""
+        self.last_usage = None
+        self.last_raw_response = None
         schema = ModelTestSuite.model_json_schema()
         payload: dict[str, object] = {
             "model": self.model,
@@ -103,6 +106,7 @@ class OllamaTestCaseProvider:
             content = message["content"]
             if not isinstance(content, str):
                 raise TypeError("Ollama response content is not text")
+            self.last_raw_response = content
             model_suite = ModelTestSuite.model_validate_json(content)
             return model_suite.to_test_suite()
         except TimeoutError as error:

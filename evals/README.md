@@ -49,10 +49,13 @@ ai-test-cases run-evals `
 ```
 
 The runner creates an immutable `run.json` manifest and then writes
-`suite.json`, `quality.json`, and `result.json` under `cases/EVAL-NNN/`. A
-second invocation with the same command skips completed cases and retries
-failed or interrupted cases. Pressing Ctrl+C is therefore safe after earlier
-cases have completed.
+`suite.json`, `quality.json`, and `result.json` under `cases/EVAL-NNN/`. If an
+Ollama response reaches the application but fails schema or service validation,
+the exact model text is retained as `raw_response.txt` beside the failed
+`result.json`. A successful retry removes that failure-only artifact. A second
+invocation with the same command skips completed cases and retries failed or
+interrupted cases. Pressing Ctrl+C is therefore safe after earlier cases have
+completed.
 
 Use `--case EVAL-001` to run a single case. Repeat `--case` to select several.
 Use `--force` only when you intentionally want to replace completed results.
