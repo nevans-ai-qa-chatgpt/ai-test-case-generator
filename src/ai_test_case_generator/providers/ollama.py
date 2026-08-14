@@ -77,7 +77,10 @@ class OllamaTestCaseProvider:
         """Request structured JSON from Ollama and validate it locally."""
         self.last_usage = None
         self.last_raw_response = None
-        schema = model_output_json_schema(request)
+        try:
+            schema = model_output_json_schema(request)
+        except ValueError as error:
+            raise ProviderError(str(error)) from error
         payload: dict[str, object] = {
             "model": self.model,
             "messages": [

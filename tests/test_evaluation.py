@@ -43,6 +43,7 @@ def test_representative_dataset_matches_the_evaluation_contract() -> None:
     assert {
         category for case in dataset.cases for category in case.request.categories
     } == set(Category)
+    assert all(case.request.case_plan for case in dataset.cases)
 
 
 def test_representative_dataset_varies_risk_and_requirement_density() -> None:

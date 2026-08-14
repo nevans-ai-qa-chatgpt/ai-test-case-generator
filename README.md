@@ -34,6 +34,7 @@ The repository currently defines:
 - Deterministic step numbering derived from model-provided list order
 - Stable requirement IDs resolved back to exact acceptance-criterion text
 - Explicit coverage gaps when a requested category lacks source support
+- Human-authored case plans that bound model output to approved scenarios
 
 The fake provider intentionally uses fixed templates rather than simulating AI
 quality. Its purpose is to exercise the application workflow reliably. The
@@ -67,7 +68,7 @@ output directory:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.7 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.8 `
   --provider ollama
 ```
 
@@ -82,20 +83,19 @@ list position while building the public `TestSuite`. This is deterministic
 derivation, not silent repair: semantic fields still must satisfy the strict
 provider and service contracts.
 
-For model-backed output, every case must include a precondition and cite at
-least one stable ID from the prompt's authoritative requirement list. Ollama's
-request-specific JSON Schema permits only the IDs available for that request;
-all model providers reject unknown IDs during conversion. The application then
-resolves accepted IDs back to the original requirement text in the public test
-suite.
+Model-backed requests require a human-authored `case_plan`. Each plan item binds
+one stable requirement ID to one requested category. The model returns only the
+plan ID and the case wording; the application assigns the category and original
+requirement text. Ollama's request-specific JSON Schema permits exactly one case
+for each authorized plan ID, and every provider is checked again during
+conversion and service validation.
 
 When request text does not support a requested functional, negative, or edge
-category, the model may return an explicit `coverage_gaps` entry instead of
-inventing behavior. A category cannot contain both test cases and a gap, and the
-service still rejects missing or unrequested categories. These controls improve
-traceability and safe abstention; the advisory quality gate and human review
-remain necessary because a valid requirement ID does not prove that every claim
-inside a case is supported.
+category, its case plan contains no item for that category. The model must then
+return an explicit `coverage_gaps` entry instead of inventing behavior. These
+controls improve traceability and safe abstention; the advisory quality gate and
+human review remain necessary because bounded case wording can still contain an
+unsupported detail.
 
 ## Generate test cases
 

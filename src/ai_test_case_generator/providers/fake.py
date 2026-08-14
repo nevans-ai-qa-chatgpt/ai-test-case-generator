@@ -3,6 +3,7 @@
 from collections.abc import Callable
 
 from ai_test_case_generator.models import (
+    CoverageGap,
     GenerationRequest,
     Priority,
     TestCase,
@@ -11,6 +12,7 @@ from ai_test_case_generator.models import (
     TestSuite,
     UserStory,
 )
+from ai_test_case_generator.requirements import requirement_text_by_id
 
 CaseFactory = Callable[[str, UserStory, list[str]], TestCase]
 
@@ -27,11 +29,40 @@ class FakeTestCaseProvider:
             TestCategory.NEGATIVE: self._negative_case,
             TestCategory.EDGE: self._edge_case,
         }
+        if not request.case_plan:
+            cases = [
+                factories[category](
+                    f"TC-{index:03d}",
+                    request.story,
+                    requirements,
+                )
+                for index, category in enumerate(request.categories, start=1)
+            ]
+            return TestSuite(source_story_id=request.story.id, test_cases=cases)
+
+        requirements_by_id = requirement_text_by_id(request)
         cases = [
-            factories[category](f"TC-{index:03d}", request.story, requirements)
-            for index, category in enumerate(request.categories, start=1)
+            factories[plan_item.category](
+                f"TC-{index:03d}",
+                request.story,
+                [requirements_by_id[plan_item.requirement_id]],
+            ).model_copy(update={"plan_id": plan_item.id})
+            for index, plan_item in enumerate(request.case_plan, start=1)
         ]
-        return TestSuite(source_story_id=request.story.id, test_cases=cases)
+        planned_categories = {item.category for item in request.case_plan}
+        gaps = [
+            CoverageGap(
+                category=category,
+                reason="The authorized case plan contains no supported scenario.",
+            )
+            for category in request.categories
+            if category not in planned_categories
+        ]
+        return TestSuite(
+            source_story_id=request.story.id,
+            test_cases=cases,
+            coverage_gaps=gaps,
+        )
 
     @staticmethod
     def _functional_case(
@@ -104,4 +135,3 @@ class FakeTestCaseProvider:
             source_requirements=requirements,
             tags=["fake-provider", "edge"],
         )
-

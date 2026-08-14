@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import pytest
 
 from ai_test_case_generator.models import (
+    CasePlanItem,
     CoverageGap,
     GenerationRequest,
     Priority,
@@ -201,3 +202,51 @@ def test_exact_citations_cover_all_authoritative_requirements() -> None:
     result = GenerationService(StubProvider(suite)).generate(request)
 
     assert len(result.test_cases) == 2
+
+
+def test_service_accepts_only_cases_bound_to_the_authorized_plan() -> None:
+    request = GenerationRequest(
+        story=UserStory(
+            id="US-001",
+            title="Reset a password",
+            narrative="As a user, I want to reset my password.",
+        ),
+        categories=[Category.FUNCTIONAL],
+        case_plan=[
+            CasePlanItem(
+                id="PLAN-001",
+                requirement_id="NARRATIVE",
+                category=Category.FUNCTIONAL,
+            )
+        ],
+    )
+    case = make_case("TC-001", Category.FUNCTIONAL)
+    case.plan_id = "PLAN-001"
+    case.source_requirements = [request.story.narrative]
+    suite = SuiteModel(source_story_id="US-001", test_cases=[case])
+
+    result = GenerationService(StubProvider(suite)).generate(request)
+
+    assert result.test_cases[0].plan_id == "PLAN-001"
+
+
+def test_service_rejects_a_case_without_its_authorized_plan_id() -> None:
+    request = GenerationRequest(
+        story=UserStory(
+            id="US-001",
+            title="Reset a password",
+            narrative="As a user, I want to reset my password.",
+        ),
+        categories=[Category.FUNCTIONAL],
+        case_plan=[
+            CasePlanItem(
+                id="PLAN-001",
+                requirement_id="NARRATIVE",
+                category=Category.FUNCTIONAL,
+            )
+        ],
+    )
+    suite = make_suite("US-001", Category.FUNCTIONAL)
+
+    with pytest.raises(ProviderContractError, match="authorized plan IDs"):
+        GenerationService(StubProvider(suite)).generate(request)

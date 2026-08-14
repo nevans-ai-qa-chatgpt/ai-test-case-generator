@@ -9,6 +9,7 @@ from ai_test_case_generator.model_output import (
     ModelTestSuite,
 )
 from ai_test_case_generator.models import (
+    CasePlanItem,
     GenerationRequest,
     Priority,
     TestCase as CaseModel,
@@ -51,6 +52,13 @@ def make_request() -> GenerationRequest:
             acceptance_criteria=["A reset link expires after a limited time."],
         ),
         categories=[Category.FUNCTIONAL],
+        case_plan=[
+            CasePlanItem(
+                id="PLAN-001",
+                requirement_id="AC-001",
+                category=Category.FUNCTIONAL,
+            )
+        ],
     )
 
 
@@ -60,6 +68,7 @@ def make_suite() -> SuiteModel:
         test_cases=[
             CaseModel(
                 id="TC-001",
+                plan_id="PLAN-001",
                 title="Request a password reset",
                 category=Category.FUNCTIONAL,
                 priority=Priority.HIGH,
@@ -84,8 +93,8 @@ def make_model_suite() -> ModelTestSuite:
         test_cases=[
             ModelTestCase(
                 id="TC-001",
+                plan_id="PLAN-001",
                 title="Request a password reset",
-                category=Category.FUNCTIONAL,
                 priority=Priority.HIGH,
                 objective="Verify the primary reset workflow.",
                 preconditions=["A registered account exists."],
@@ -95,7 +104,6 @@ def make_model_suite() -> ModelTestSuite:
                         expected_result="A time-limited link is sent.",
                     )
                 ],
-                source_requirement_ids=["AC-001"],
             )
         ],
     )
@@ -129,14 +137,13 @@ def test_provider_requests_and_validates_structured_output() -> None:
     assert transport.payload["model"] == "local-test"
     assert transport.payload["stream"] is False
     schema = transport.payload["format"]
-    assert schema["properties"]["test_cases"]["maxItems"] == 6
+    assert schema["properties"]["test_cases"]["maxItems"] == 1
     assert schema["$defs"]["ModelTestCase"]["properties"]["steps"]["maxItems"] == 6
     assert "number" not in schema["$defs"]["ModelTestStep"]["properties"]
-    requirement_items = schema["$defs"]["ModelTestCase"]["properties"][
-        "source_requirement_ids"
-    ]["items"]
-    assert requirement_items["enum"] == ["AC-001"]
-    assert schema["$defs"]["TestCategory"]["enum"] == ["functional"]
+    plan_id = schema["$defs"]["ModelTestCase"]["properties"]["plan_id"]
+    assert plan_id["enum"] == ["PLAN-001"]
+    assert schema["properties"]["test_cases"]["maxItems"] == 1
+    assert schema["properties"]["coverage_gaps"]["maxItems"] == 0
     assert transport.payload["options"] == {"temperature": 0}
     assert provider.last_usage is not None
     assert provider.last_usage.total_tokens == 200
@@ -222,3 +229,13 @@ def test_timeout_error_explains_how_long_the_provider_waited() -> None:
 
     with pytest.raises(ProviderError, match="timed out after 45 seconds"):
         provider.generate(make_request())
+
+
+def test_model_backed_generation_requires_an_explicit_case_plan() -> None:
+    provider = OllamaTestCaseProvider(
+        transport=RecordingTransport({"message": {"content": "{}"}})
+    )
+    request = make_request().model_copy(update={"case_plan": []})
+
+    with pytest.raises(ProviderError, match="requires a case plan"):
+        provider.generate(request)

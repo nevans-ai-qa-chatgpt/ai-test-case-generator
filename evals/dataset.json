@@ -16,7 +16,13 @@
             "The new password must satisfy the configured password policy."
           ]
         },
-        "categories": ["functional", "negative", "edge"]
+        "categories": ["functional", "negative", "edge"],
+        "case_plan": [
+          {"id": "PLAN-001", "requirement_id": "AC-001", "category": "functional"},
+          {"id": "PLAN-002", "requirement_id": "AC-002", "category": "negative"},
+          {"id": "PLAN-003", "requirement_id": "AC-003", "category": "edge"},
+          {"id": "PLAN-004", "requirement_id": "AC-004", "category": "negative"}
+        ]
       },
       "review_assertions": [
         "Covers registered and unregistered email behavior without exposing account existence.",
@@ -44,7 +50,12 @@
             "A quantity below 1 or above 10 is rejected and leaves the cart unchanged."
           ]
         },
-        "categories": ["functional", "negative", "edge"]
+        "categories": ["functional", "negative", "edge"],
+        "case_plan": [
+          {"id": "PLAN-001", "requirement_id": "AC-001", "category": "edge"},
+          {"id": "PLAN-002", "requirement_id": "AC-002", "category": "functional"},
+          {"id": "PLAN-003", "requirement_id": "AC-003", "category": "negative"}
+        ]
       },
       "review_assertions": [
         "Covers both accepted boundaries, 1 and 10.",
@@ -73,7 +84,13 @@
             "Only one attachment is allowed per support request."
           ]
         },
-        "categories": ["functional", "negative", "edge"]
+        "categories": ["functional", "negative", "edge"],
+        "case_plan": [
+          {"id": "PLAN-001", "requirement_id": "AC-001", "category": "functional"},
+          {"id": "PLAN-002", "requirement_id": "AC-002", "category": "edge"},
+          {"id": "PLAN-003", "requirement_id": "AC-003", "category": "negative"},
+          {"id": "PLAN-004", "requirement_id": "AC-004", "category": "edge"}
+        ]
       },
       "review_assertions": [
         "Covers both supported types and an unsupported type.",
@@ -101,7 +118,12 @@
             "A sign-in attempt while locked is rejected and does not extend the lock duration."
           ]
         },
-        "categories": ["functional", "negative", "edge"]
+        "categories": ["functional", "negative", "edge"],
+        "case_plan": [
+          {"id": "PLAN-001", "requirement_id": "AC-001", "category": "edge"},
+          {"id": "PLAN-002", "requirement_id": "AC-002", "category": "functional"},
+          {"id": "PLAN-003", "requirement_id": "AC-003", "category": "negative"}
+        ]
       },
       "review_assertions": [
         "Covers the transition from the fourth to the fifth consecutive failure.",
@@ -129,7 +151,12 @@
             "When a local time occurs twice, the client must select the intended UTC offset before saving."
           ]
         },
-        "categories": ["functional", "edge"]
+        "categories": ["functional", "edge"],
+        "case_plan": [
+          {"id": "PLAN-001", "requirement_id": "AC-001", "category": "functional"},
+          {"id": "PLAN-002", "requirement_id": "AC-002", "category": "edge"},
+          {"id": "PLAN-003", "requirement_id": "AC-003", "category": "edge"}
+        ]
       },
       "review_assertions": [
         "Covers conversion from stored UTC to a selected IANA time zone.",
@@ -158,7 +185,13 @@
             "A rejected authorization attempt leaves the invoice status unchanged."
           ]
         },
-        "categories": ["functional", "negative", "edge"]
+        "categories": ["functional", "negative", "edge"],
+        "case_plan": [
+          {"id": "PLAN-001", "requirement_id": "AC-001", "category": "negative"},
+          {"id": "PLAN-002", "requirement_id": "AC-002", "category": "functional"},
+          {"id": "PLAN-003", "requirement_id": "AC-003", "category": "edge"},
+          {"id": "PLAN-004", "requirement_id": "AC-004", "category": "negative"}
+        ]
       },
       "review_assertions": [
         "Covers self-approval denial independently of the amount threshold.",
@@ -187,7 +220,13 @@
             "Only one promotional code can be applied to an order."
           ]
         },
-        "categories": ["functional", "negative", "edge"]
+        "categories": ["functional", "negative", "edge"],
+        "case_plan": [
+          {"id": "PLAN-001", "requirement_id": "AC-001", "category": "edge"},
+          {"id": "PLAN-002", "requirement_id": "AC-002", "category": "functional"},
+          {"id": "PLAN-003", "requirement_id": "AC-003", "category": "negative"},
+          {"id": "PLAN-004", "requirement_id": "AC-004", "category": "negative"}
+        ]
       },
       "review_assertions": [
         "Covers eligibility immediately below and exactly at the $100 boundary.",
@@ -211,7 +250,10 @@
           "narrative": "As a reader, I want to bookmark an article so that I can return to it later.",
           "acceptance_criteria": []
         },
-        "categories": ["functional"]
+        "categories": ["functional"],
+        "case_plan": [
+          {"id": "PLAN-001", "requirement_id": "NARRATIVE", "category": "functional"}
+        ]
       },
       "review_assertions": [
         "Produces a minimal functional workflow supported by the narrative.",

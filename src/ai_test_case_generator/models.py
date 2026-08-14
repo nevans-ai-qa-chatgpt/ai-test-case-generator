@@ -32,6 +32,14 @@ class Priority(StrEnum):
     LOW = "low"
 
 
+class CasePlanItem(StrictModel):
+    """One human-authorized requirement/category combination."""
+
+    id: str = Field(pattern=r"^PLAN-[0-9]{3}$")
+    requirement_id: str = Field(pattern=r"^(?:AC-[0-9]{3,}|NARRATIVE)$")
+    category: TestCategory
+
+
 class UserStory(StrictModel):
     """A product requirement supplied to the generator."""
 
@@ -49,11 +57,44 @@ class GenerationRequest(StrictModel):
         default_factory=lambda: list(TestCategory),
         min_length=1,
     )
+    case_plan: list[CasePlanItem] = Field(
+        default_factory=list,
+        max_length=MAX_TEST_CASES,
+    )
 
     @model_validator(mode="after")
-    def categories_are_unique(self) -> Self:
+    def request_constraints_are_consistent(self) -> Self:
         if len(self.categories) != len(set(self.categories)):
             raise ValueError("requested categories must be unique")
+
+        plan_ids = [item.id for item in self.case_plan]
+        if len(plan_ids) != len(set(plan_ids)):
+            raise ValueError("case plan IDs must be unique")
+
+        pairs = [(item.requirement_id, item.category) for item in self.case_plan]
+        if len(pairs) != len(set(pairs)):
+            raise ValueError("case plan requirement/category pairs must be unique")
+
+        unexpected_categories = {
+            item.category for item in self.case_plan
+        } - set(self.categories)
+        if unexpected_categories:
+            raise ValueError("case plan categories must be requested")
+
+        if self.case_plan:
+            requirement_ids = (
+                {
+                    f"AC-{index:03d}"
+                    for index in range(1, len(self.story.acceptance_criteria) + 1)
+                }
+                if self.story.acceptance_criteria
+                else {"NARRATIVE"}
+            )
+            planned_ids = {item.requirement_id for item in self.case_plan}
+            if planned_ids - requirement_ids:
+                raise ValueError("case plan contains unknown requirement IDs")
+            if requirement_ids - planned_ids:
+                raise ValueError("case plan must cover every authoritative requirement")
         return self
 
 
@@ -69,6 +110,7 @@ class TestCase(StrictModel):
     """A test case that can be reviewed or executed by a tester."""
 
     id: str = Field(min_length=1, examples=["TC-001"])
+    plan_id: str | None = Field(default=None, pattern=r"^PLAN-[0-9]{3}$")
     title: str = Field(min_length=1)
     category: TestCategory
     priority: Priority

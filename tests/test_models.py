@@ -5,7 +5,9 @@ import pytest
 from pydantic import ValidationError
 
 from ai_test_case_generator.models import (
+    CasePlanItem,
     CoverageGap,
+    GenerationRequest,
     MAX_STEPS_PER_CASE,
     MAX_TEST_CASES,
     Priority,
@@ -42,6 +44,92 @@ def test_user_story_strips_surrounding_whitespace() -> None:
 
     assert story.id == "US-001"
     assert story.title == "Reset password"
+
+
+def test_case_plan_must_cover_known_requirements_with_requested_categories() -> None:
+    story = UserStory(
+        id="US-001",
+        title="Reset password",
+        narrative="As a user, I want to reset my password.",
+        acceptance_criteria=["A link is sent.", "The link is single-use."],
+    )
+
+    request = GenerationRequest(
+        story=story,
+        categories=[Category.FUNCTIONAL, Category.EDGE],
+        case_plan=[
+            CasePlanItem(
+                id="PLAN-001",
+                requirement_id="AC-001",
+                category=Category.FUNCTIONAL,
+            ),
+            CasePlanItem(
+                id="PLAN-002",
+                requirement_id="AC-002",
+                category=Category.EDGE,
+            ),
+        ],
+    )
+
+    assert len(request.case_plan) == 2
+
+
+def test_case_plan_rejects_missing_or_unknown_requirements() -> None:
+    story = UserStory(
+        id="US-001",
+        title="Reset password",
+        narrative="As a user, I want to reset my password.",
+        acceptance_criteria=["A link is sent.", "The link is single-use."],
+    )
+
+    with pytest.raises(ValidationError, match="cover every authoritative"):
+        GenerationRequest(
+            story=story,
+            categories=[Category.FUNCTIONAL],
+            case_plan=[
+                CasePlanItem(
+                    id="PLAN-001",
+                    requirement_id="AC-001",
+                    category=Category.FUNCTIONAL,
+                )
+            ],
+        )
+    with pytest.raises(ValidationError, match="unknown requirement IDs"):
+        GenerationRequest(
+            story=story,
+            categories=[Category.FUNCTIONAL],
+            case_plan=[
+                CasePlanItem(
+                    id="PLAN-001",
+                    requirement_id="AC-001",
+                    category=Category.FUNCTIONAL,
+                ),
+                CasePlanItem(
+                    id="PLAN-002",
+                    requirement_id="AC-999",
+                    category=Category.FUNCTIONAL,
+                ),
+            ],
+        )
+
+
+def test_case_plan_rejects_an_unrequested_category() -> None:
+    with pytest.raises(ValidationError, match="categories must be requested"):
+        GenerationRequest(
+            story=UserStory(
+                id="US-001",
+                title="Reset password",
+                narrative="As a user, I want to reset my password.",
+            ),
+            categories=[Category.FUNCTIONAL],
+            case_plan=[
+                CasePlanItem(
+                    id="PLAN-001",
+                    requirement_id="NARRATIVE",
+                    category=Category.EDGE,
+                )
+            ],
+        )
 
 
 def test_unknown_fields_are_rejected() -> None:

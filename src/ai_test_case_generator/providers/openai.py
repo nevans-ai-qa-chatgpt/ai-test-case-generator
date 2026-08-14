@@ -42,6 +42,8 @@ class OpenAITestCaseProvider:
 
     def generate(self, request: GenerationRequest) -> TestSuite:
         """Request a structured suite without performing repair or retry loops."""
+        if not request.case_plan:
+            raise ProviderError("model-backed generation requires a case plan")
         try:
             response = self._client.responses.parse(
                 model=self.model,
@@ -65,7 +67,7 @@ class OpenAITestCaseProvider:
             return parsed.to_test_suite(request)
         except ValueError as error:
             raise ProviderError(
-                "OpenAI response referenced an unknown requirement ID"
+                "OpenAI response did not match the authorized case plan"
             ) from error
 
 

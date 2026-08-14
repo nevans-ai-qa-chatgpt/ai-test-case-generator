@@ -44,7 +44,7 @@ configuration:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.7 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.8 `
   --provider ollama
 ```
 
@@ -250,6 +250,36 @@ Requirement IDs therefore prevent blank or fabricated traceability values, but
 they do not establish semantic entailment between a citation and generated
 steps. Keep the full dataset paused. The next containment experiment should
 bound the request-specific case plan instead of adding more prompt wording.
+
+## Prompt v1.8 authorized case plans
+
+Prompt/schema v1.8 makes the case plan explicit, human-authored request data.
+Each plan item binds one authoritative requirement ID to one requested category.
+The model-facing case no longer contains a category or source-requirement field;
+it returns only an authorized `PLAN-NNN` ID plus the case wording. The
+application assigns the planned category and exact requirement text during
+conversion and validates the binding again at the service boundary.
+
+The request-specific Ollama schema requires exactly one case for every plan
+item and permits no additional plan IDs. A requested category without a plan
+item requires exactly one coverage gap. OpenAI structured output uses the
+shared static schema, then enforces the same exact plan during deterministic
+conversion. Model-backed requests without a case plan are rejected before a
+generation call.
+
+The `EVAL-001` plan authorizes only these four combinations:
+
+| Plan ID | Requirement | Category |
+| --- | --- | --- |
+| `PLAN-001` | `AC-001` registered reset link | functional |
+| `PLAN-002` | `AC-002` unregistered email | negative |
+| `PLAN-003` | `AC-003` single-use link | edge |
+| `PLAN-004` | `AC-004` configured password policy | negative |
+
+This prevents a model from adding the unsupported sixth empty-email case seen
+in v1.7. It does not prevent unsupported details inside one of the four allowed
+cases, so the quality gate and human review remain required. No v1.8 model
+canary has been run yet.
 
 ## Review rubric
 

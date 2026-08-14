@@ -9,6 +9,7 @@ from ai_test_case_generator.model_output import (
     ModelTestSuite,
 )
 from ai_test_case_generator.models import (
+    CasePlanItem,
     GenerationRequest,
     Priority,
     TestCase as CaseModel,
@@ -46,6 +47,13 @@ def make_request() -> GenerationRequest:
             acceptance_criteria=["A reset link expires after a limited time."],
         ),
         categories=[Category.FUNCTIONAL],
+        case_plan=[
+            CasePlanItem(
+                id="PLAN-001",
+                requirement_id="AC-001",
+                category=Category.FUNCTIONAL,
+            )
+        ],
     )
 
 
@@ -55,6 +63,7 @@ def make_suite() -> SuiteModel:
         test_cases=[
             CaseModel(
                 id="TC-001",
+                plan_id="PLAN-001",
                 title="Request a password reset",
                 category=Category.FUNCTIONAL,
                 priority=Priority.HIGH,
@@ -81,8 +90,8 @@ def make_model_suite() -> ModelTestSuite:
         test_cases=[
             ModelTestCase(
                 id="TC-001",
+                plan_id="PLAN-001",
                 title="Request a password reset",
-                category=Category.FUNCTIONAL,
                 priority=Priority.HIGH,
                 objective="Verify the primary reset workflow.",
                 preconditions=["A registered account exists."],
@@ -92,7 +101,6 @@ def make_model_suite() -> ModelTestSuite:
                         expected_result="A time-limited link is sent.",
                     )
                 ],
-                source_requirement_ids=["AC-001"],
             )
         ],
     )
@@ -147,10 +155,10 @@ def test_missing_parsed_output_is_a_provider_error() -> None:
         provider.generate(make_request())
 
 
-def test_unknown_requirement_id_is_a_provider_error() -> None:
+def test_unknown_plan_id_is_a_provider_error() -> None:
     model_suite = make_model_suite()
     unknown_case = model_suite.test_cases[0].model_copy(
-        update={"source_requirement_ids": ["AC-999"]}
+        update={"plan_id": "PLAN-999"}
     )
     response = SimpleNamespace(
         output_parsed=model_suite.model_copy(update={"test_cases": [unknown_case]}),
@@ -160,8 +168,20 @@ def test_unknown_requirement_id_is_a_provider_error() -> None:
         client=MockClient(RecordingResponses(response))
     )
 
-    with pytest.raises(ProviderError, match="unknown requirement ID"):
+    with pytest.raises(ProviderError, match="authorized case plan"):
         provider.generate(make_request())
+
+
+def test_model_backed_generation_requires_an_explicit_case_plan() -> None:
+    provider = OpenAITestCaseProvider(
+        client=MockClient(
+            RecordingResponses(SimpleNamespace(output_parsed=None, usage=None))
+        )
+    )
+    request = make_request().model_copy(update={"case_plan": []})
+
+    with pytest.raises(ProviderError, match="requires a case plan"):
+        provider.generate(request)
 
 
 def test_sdk_failure_is_wrapped_without_exposing_details() -> None:

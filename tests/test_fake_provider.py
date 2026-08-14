@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from ai_test_case_generator.models import (
+    CasePlanItem,
     GenerationRequest,
     TestCategory as Category,
     UserStory,
@@ -78,3 +79,34 @@ def test_duplicate_requested_categories_are_rejected() -> None:
             story=make_story(),
             categories=[Category.FUNCTIONAL, Category.FUNCTIONAL],
         )
+
+
+def test_fake_provider_follows_an_explicit_case_plan_and_reports_a_gap() -> None:
+    story = make_story(
+        acceptance_criteria=["A link is sent.", "A link is single-use."]
+    )
+    request = GenerationRequest(
+        story=story,
+        categories=[Category.FUNCTIONAL, Category.EDGE, Category.NEGATIVE],
+        case_plan=[
+            CasePlanItem(
+                id="PLAN-001",
+                requirement_id="AC-001",
+                category=Category.FUNCTIONAL,
+            ),
+            CasePlanItem(
+                id="PLAN-002",
+                requirement_id="AC-002",
+                category=Category.EDGE,
+            ),
+        ],
+    )
+
+    suite = FakeTestCaseProvider().generate(request)
+
+    assert [case.plan_id for case in suite.test_cases] == ["PLAN-001", "PLAN-002"]
+    assert [case.category for case in suite.test_cases] == [
+        Category.FUNCTIONAL,
+        Category.EDGE,
+    ]
+    assert [gap.category for gap in suite.coverage_gaps] == [Category.NEGATIVE]

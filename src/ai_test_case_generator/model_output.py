@@ -1,10 +1,11 @@
 """Model-facing output contract and deterministic domain conversion."""
 
-from typing import Annotated, Self
+from typing import Self
 
 from pydantic import Field, model_validator
 
 from ai_test_case_generator.models import (
+    CasePlanItem,
     CoverageGap,
     GenerationRequest,
     MAX_STEPS_PER_CASE,
@@ -18,11 +19,6 @@ from ai_test_case_generator.models import (
 )
 from ai_test_case_generator.requirements import requirement_text_by_id
 
-RequirementId = Annotated[
-    str,
-    Field(pattern=r"^(?:AC-[0-9]{3,}|NARRATIVE)$"),
-]
-
 
 class ModelTestStep(StrictModel):
     """One model-generated step, ordered by its position in the list."""
@@ -35,8 +31,8 @@ class ModelTestCase(StrictModel):
     """A generated case before deterministic step numbering."""
 
     id: str = Field(min_length=1, examples=["TC-001"])
+    plan_id: str = Field(pattern=r"^PLAN-[0-9]{3}$")
     title: str = Field(min_length=1)
-    category: TestCategory
     priority: Priority
     objective: str = Field(min_length=1)
     preconditions: list[str] = Field(min_length=1)
@@ -44,26 +40,25 @@ class ModelTestCase(StrictModel):
         min_length=1,
         max_length=MAX_STEPS_PER_CASE,
     )
-    source_requirement_ids: list[RequirementId] = Field(min_length=1)
     tags: list[str] = Field(default_factory=list)
 
-    def to_test_case(self, requirements: dict[str, str]) -> TestCase:
+    def to_test_case(
+        self,
+        plan_item: CasePlanItem,
+        requirement: str,
+    ) -> TestCase:
         """Assign consecutive numbers from the model's list order."""
 
-        unknown = set(self.source_requirement_ids) - requirements.keys()
-        if unknown:
-            raise ValueError("model output contains unknown requirement IDs")
-        case_data = self.model_dump(exclude={"steps", "source_requirement_ids"})
+        case_data = self.model_dump(exclude={"steps", "plan_id"})
         return TestCase(
             **case_data,
+            plan_id=plan_item.id,
+            category=plan_item.category,
             steps=[
                 TestStep(number=number, **step.model_dump())
                 for number, step in enumerate(self.steps, start=1)
             ],
-            source_requirements=[
-                requirements[requirement_id]
-                for requirement_id in self.source_requirement_ids
-            ],
+            source_requirements=[requirement],
         )
 
 
@@ -98,22 +93,36 @@ class ModelTestSuite(StrictModel):
         if len(gap_categories) != len(set(gap_categories)):
             raise ValueError("coverage gap categories must be unique")
 
-        case_categories = {test_case.category for test_case in self.test_cases}
-        if case_categories & set(gap_categories):
-            raise ValueError(
-                "a category cannot have both test cases and a coverage gap"
-            )
+        plan_ids = [test_case.plan_id for test_case in self.test_cases]
+        if len(plan_ids) != len(set(plan_ids)):
+            raise ValueError("model test-case plan IDs must be unique")
         return self
 
     def to_test_suite(self, request: GenerationRequest) -> TestSuite:
         """Build the public suite after applying deterministic fields."""
 
+        if not request.case_plan:
+            raise ValueError("model-backed generation requires a case plan")
         requirements = requirement_text_by_id(request)
+        plan_by_id = {item.id: item for item in request.case_plan}
+        returned_plan_ids = {test_case.plan_id for test_case in self.test_cases}
+        if returned_plan_ids != set(plan_by_id):
+            raise ValueError("model output does not match the authorized case plan")
+
+        planned_categories = {item.category for item in request.case_plan}
+        expected_gap_categories = set(request.categories) - planned_categories
+        returned_gap_categories = {gap.category for gap in self.coverage_gaps}
+        if returned_gap_categories != expected_gap_categories:
+            raise ValueError("model output does not match the required coverage gaps")
+
         return TestSuite(
             schema_version=self.schema_version,
             source_story_id=self.source_story_id,
             test_cases=[
-                test_case.to_test_case(requirements)
+                test_case.to_test_case(
+                    plan_by_id[test_case.plan_id],
+                    requirements[plan_by_id[test_case.plan_id].requirement_id],
+                )
                 for test_case in self.test_cases
             ],
             coverage_gaps=[
@@ -126,15 +135,31 @@ class ModelTestSuite(StrictModel):
 def model_output_json_schema(request: GenerationRequest) -> dict[str, object]:
     """Build the schema with an exact enum of IDs valid for this request."""
 
+    if not request.case_plan:
+        raise ValueError("model-backed generation requires a case plan")
     schema = ModelTestSuite.model_json_schema()
     case_properties = schema["$defs"]["ModelTestCase"]["properties"]
-    id_items = case_properties["source_requirement_ids"]["items"]
-    id_items.clear()
-    id_items.update(
+    plan_id = case_properties["plan_id"]
+    plan_id.clear()
+    plan_id.update(
         type="string",
-        enum=list(requirement_text_by_id(request)),
+        enum=[item.id for item in request.case_plan],
     )
-    schema["$defs"]["TestCategory"]["enum"] = [
-        category.value for category in request.categories
+    test_cases = schema["properties"]["test_cases"]
+    test_cases["minItems"] = len(request.case_plan)
+    test_cases["maxItems"] = len(request.case_plan)
+
+    planned_categories = {item.category for item in request.case_plan}
+    gap_categories = [
+        category
+        for category in request.categories
+        if category not in planned_categories
     ]
+    coverage_gaps = schema["properties"]["coverage_gaps"]
+    coverage_gaps["minItems"] = len(gap_categories)
+    coverage_gaps["maxItems"] = len(gap_categories)
+    if gap_categories:
+        schema["$defs"]["TestCategory"]["enum"] = [
+            category.value for category in gap_categories
+        ]
     return schema
