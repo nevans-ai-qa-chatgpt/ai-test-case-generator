@@ -2,7 +2,7 @@
 
 from ai_test_case_generator.models import GenerationRequest
 
-PROMPT_VERSION = "1.5"
+PROMPT_VERSION = "1.6"
 
 SYSTEM_PROMPT = """You are a senior quality engineer generating review-ready test cases.
 
@@ -23,7 +23,8 @@ requirement appropriately instead of inventing a new input, rule, or scenario.
 Every case must contain at least one concrete precondition. Every source_requirements
 entry must exactly reproduce a complete acceptance criterion, or the complete
 narrative when no criteria exist. Cite every authoritative requirement in at least
-one case. Never cite prompt instructions as product requirements.
+one case. Never cite prompt instructions as product requirements. Never return a
+blank source_requirements entry.
 
 Return no more than 6 test cases total and no more than 6 steps per case. Within
 those limits, cover every requested category first, then prioritize distinct,

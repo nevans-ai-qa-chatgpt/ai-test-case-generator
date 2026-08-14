@@ -44,7 +44,7 @@ configuration:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.4 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.6 `
   --provider ollama
 ```
 
@@ -190,6 +190,19 @@ the faster development model and is the only one of the two that passes the
 v1.5 contract on this input, although its nine findings still require human
 review. Keep the full dataset run paused: one input is insufficient for a broad
 model decision, and neither result meets the unattended-generation quality bar.
+
+## Prompt v1.6 contract hardening
+
+The captured Gemma failure showed that a non-empty `source_requirements` list
+could still contain an empty string. Prompt/schema v1.6 requires every citation
+item to contain at least one non-whitespace character and explicitly forbids
+blank citations. This produces an earlier model-schema error with a precise
+field location; the service still performs the stronger check that every
+citation exactly matches authoritative request text.
+
+This is a deterministic contract improvement, not evidence of better model
+quality. No v1.6 model canary has been run yet, and v1.5 artifacts remain
+unchanged as historical evidence.
 
 ## Review rubric
 

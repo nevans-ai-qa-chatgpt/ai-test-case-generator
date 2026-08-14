@@ -1,6 +1,6 @@
 """Model-facing output contract and deterministic domain conversion."""
 
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import Field, model_validator
 
@@ -14,6 +14,8 @@ from ai_test_case_generator.models import (
     TestStep,
     TestSuite,
 )
+
+SourceRequirement = Annotated[str, Field(min_length=1)]
 
 
 class ModelTestStep(StrictModel):
@@ -36,7 +38,7 @@ class ModelTestCase(StrictModel):
         min_length=1,
         max_length=MAX_STEPS_PER_CASE,
     )
-    source_requirements: list[str] = Field(min_length=1)
+    source_requirements: list[SourceRequirement] = Field(min_length=1)
     tags: list[str] = Field(default_factory=list)
 
     def to_test_case(self) -> TestCase:

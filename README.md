@@ -66,7 +66,7 @@ output directory:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.5 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.6 `
   --provider ollama
 ```
 
