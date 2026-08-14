@@ -61,7 +61,12 @@ class OpenAITestCaseProvider:
         parsed = getattr(response, "output_parsed", None)
         if not isinstance(parsed, ModelTestSuite):
             raise ProviderError("OpenAI response did not contain parsed model output")
-        return parsed.to_test_suite()
+        try:
+            return parsed.to_test_suite(request)
+        except ValueError as error:
+            raise ProviderError(
+                "OpenAI response referenced an unknown requirement ID"
+            ) from error
 
 
 def _extract_usage(response: object) -> TokenUsage | None:

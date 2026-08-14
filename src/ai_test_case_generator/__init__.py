@@ -13,6 +13,7 @@ from ai_test_case_generator.evaluation_runner import (
     EvaluationRunSummary,
 )
 from ai_test_case_generator.models import (
+    CoverageGap,
     GenerationRequest,
     MAX_STEPS_PER_CASE,
     MAX_TEST_CASES,
@@ -26,6 +27,7 @@ from ai_test_case_generator.models import (
 from ai_test_case_generator.service import GenerationService, ProviderContractError
 
 __all__ = [
+    "CoverageGap",
     "EvaluationCase",
     "EvaluationCaseResult",
     "EvaluationDataset",

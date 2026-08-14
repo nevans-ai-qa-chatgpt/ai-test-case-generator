@@ -95,9 +95,7 @@ def make_model_suite() -> ModelTestSuite:
                         expected_result="A time-limited link is sent.",
                     )
                 ],
-                source_requirements=[
-                    "A reset link expires after a limited time."
-                ],
+                source_requirement_ids=["AC-001"],
             )
         ],
     )
@@ -130,11 +128,15 @@ def test_provider_requests_and_validates_structured_output() -> None:
     assert transport.payload is not None
     assert transport.payload["model"] == "local-test"
     assert transport.payload["stream"] is False
-    assert transport.payload["format"] == ModelTestSuite.model_json_schema()
     schema = transport.payload["format"]
     assert schema["properties"]["test_cases"]["maxItems"] == 6
     assert schema["$defs"]["ModelTestCase"]["properties"]["steps"]["maxItems"] == 6
     assert "number" not in schema["$defs"]["ModelTestStep"]["properties"]
+    requirement_items = schema["$defs"]["ModelTestCase"]["properties"][
+        "source_requirement_ids"
+    ]["items"]
+    assert requirement_items["enum"] == ["AC-001"]
+    assert schema["$defs"]["TestCategory"]["enum"] == ["functional"]
     assert transport.payload["options"] == {"temperature": 0}
     assert provider.last_usage is not None
     assert provider.last_usage.total_tokens == 200

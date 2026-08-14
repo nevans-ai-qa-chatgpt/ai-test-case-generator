@@ -44,7 +44,9 @@ class GenerationService:
         suite: TestSuite,
     ) -> None:
         requested = set(request.categories)
-        returned = {test_case.category for test_case in suite.test_cases}
+        case_categories = {test_case.category for test_case in suite.test_cases}
+        gap_categories = {gap.category for gap in suite.coverage_gaps}
+        returned = case_categories | gap_categories
         missing = requested - returned
         unexpected = returned - requested
 
@@ -79,7 +81,7 @@ class GenerationService:
             cited.update(set(test_case.source_requirements) & authoritative)
 
         missing = authoritative - cited
-        if missing:
+        if suite.test_cases and missing:
             problems.append(
                 f"{len(missing)} authoritative requirement(s) are not cited"
             )

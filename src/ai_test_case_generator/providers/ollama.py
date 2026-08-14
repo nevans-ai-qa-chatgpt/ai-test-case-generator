@@ -6,7 +6,10 @@ from urllib.request import Request, urlopen
 
 from pydantic import ValidationError
 
-from ai_test_case_generator.model_output import ModelTestSuite
+from ai_test_case_generator.model_output import (
+    ModelTestSuite,
+    model_output_json_schema,
+)
 from ai_test_case_generator.models import GenerationRequest, TestSuite
 from ai_test_case_generator.prompts import PROMPT_VERSION, SYSTEM_PROMPT, build_user_prompt
 from ai_test_case_generator.providers.base import ProviderError, TokenUsage
@@ -74,7 +77,7 @@ class OllamaTestCaseProvider:
         """Request structured JSON from Ollama and validate it locally."""
         self.last_usage = None
         self.last_raw_response = None
-        schema = ModelTestSuite.model_json_schema()
+        schema = model_output_json_schema(request)
         payload: dict[str, object] = {
             "model": self.model,
             "messages": [
@@ -108,7 +111,7 @@ class OllamaTestCaseProvider:
                 raise TypeError("Ollama response content is not text")
             self.last_raw_response = content
             model_suite = ModelTestSuite.model_validate_json(content)
-            return model_suite.to_test_suite()
+            return model_suite.to_test_suite(request)
         except TimeoutError as error:
             raise ProviderError(
                 f"Ollama request timed out after {self.timeout:g} seconds "

@@ -44,7 +44,7 @@ configuration:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.6 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.7 `
   --provider ollama
 ```
 
@@ -204,6 +204,27 @@ This is a deterministic contract improvement, not evidence of better model
 quality. No v1.6 model canary has been run yet, and v1.5 artifacts remain
 unchanged as historical evidence.
 
+## Prompt v1.7 safe abstention and requirement IDs
+
+Prompt/schema v1.7 removes free-text citations from the model-facing contract.
+The prompt assigns stable IDs (`AC-001`, `AC-002`, and so on, or `NARRATIVE`
+when no criteria exist), and generated cases cite those IDs. The Ollama schema
+uses a request-specific enum containing only valid IDs. Conversion rejects an
+unknown ID for every provider and resolves accepted IDs back to the exact source
+text saved in the public suite.
+
+The output contract also permits a requested category to contain one explicit
+coverage gap when the supplied requirements do not support a test for that
+category. A category cannot contain both cases and a gap, gaps cannot be
+duplicated, and the service still rejects missing or unrequested categories.
+This removes the instruction pressure to invent a scenario merely to fill every
+requested category.
+
+These are deterministic containment controls. They do not prove that the steps
+of a case are semantically supported by its cited requirement. No v1.7 model
+canary has been run yet; use a new run directory so earlier evidence remains
+unchanged.
+
 ## Review rubric
 
 Evaluate each generated suite on five dimensions:
@@ -211,7 +232,8 @@ Evaluate each generated suite on five dimensions:
 1. **Contract validity**: The JSON matches `TestSuite`, IDs are unique, steps are
    consecutive, and the requested story and categories are preserved.
 2. **Requirement coverage**: Every acceptance criterion has meaningful positive
-   or negative coverage and each requested category is represented.
+   or negative coverage, and each requested category has a supported case or a
+   justified coverage gap.
 3. **Grounding**: Expected behavior comes only from the supplied story and
    acceptance criteria. Unspecified limits, policies, timings, and backend
    effects are not invented.

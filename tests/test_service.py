@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import pytest
 
 from ai_test_case_generator.models import (
+    CoverageGap,
     GenerationRequest,
     Priority,
     TestCase as CaseModel,
@@ -89,6 +90,40 @@ def test_missing_requested_category_is_rejected() -> None:
 
     with pytest.raises(ProviderContractError, match="missing categories: negative"):
         GenerationService(provider).generate(request)
+
+
+def test_coverage_gap_satisfies_an_unsupported_requested_category() -> None:
+    request = make_request(Category.EDGE)
+    suite = SuiteModel(
+        source_story_id="US-001",
+        coverage_gaps=[
+            CoverageGap(
+                category=Category.EDGE,
+                reason="No boundary behavior is specified.",
+            )
+        ],
+    )
+
+    result = GenerationService(StubProvider(suite)).generate(request)
+
+    assert result.test_cases == []
+    assert result.coverage_gaps[0].category is Category.EDGE
+
+
+def test_unrequested_coverage_gap_is_rejected() -> None:
+    request = make_request(Category.FUNCTIONAL)
+    suite = SuiteModel(
+        source_story_id="US-001",
+        coverage_gaps=[
+            CoverageGap(
+                category=Category.EDGE,
+                reason="No boundary behavior is specified.",
+            )
+        ],
+    )
+
+    with pytest.raises(ProviderContractError, match="unexpected categories: edge"):
+        GenerationService(StubProvider(suite)).generate(request)
 
 
 def test_unrequested_category_is_rejected() -> None:

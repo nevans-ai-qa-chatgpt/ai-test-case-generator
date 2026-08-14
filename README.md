@@ -32,7 +32,8 @@ The repository currently defines:
 - Per-case suites, quality reports, timing, token usage, and status artifacts
 - Schema-enforced limits of six test cases and six steps per case
 - Deterministic step numbering derived from model-provided list order
-- Required model preconditions and exact acceptance-criterion traceability
+- Stable requirement IDs resolved back to exact acceptance-criterion text
+- Explicit coverage gaps when a requested category lacks source support
 
 The fake provider intentionally uses fixed templates rather than simulating AI
 quality. Its purpose is to exercise the application workflow reliably. The
@@ -66,7 +67,7 @@ output directory:
 ```powershell
 ai-test-cases run-evals `
   --dataset evals/dataset.json `
-  --output-dir evals/runs/qwen3-4b-prompt-v1.6 `
+  --output-dir evals/runs/qwen3-4b-prompt-v1.7 `
   --provider ollama
 ```
 
@@ -81,12 +82,20 @@ list position while building the public `TestSuite`. This is deterministic
 derivation, not silent repair: semantic fields still must satisfy the strict
 provider and service contracts.
 
-For model-backed output, every case must include a precondition and at least one
-exact source citation. The service rejects citations that are not complete
-acceptance criteria from the request and rejects a suite that leaves any
-authoritative criterion uncited. Exact citation proves traceability, although it
-does not by itself prove that every generated claim is supported; the advisory
-quality gate and human review still evaluate that broader grounding question.
+For model-backed output, every case must include a precondition and cite at
+least one stable ID from the prompt's authoritative requirement list. Ollama's
+request-specific JSON Schema permits only the IDs available for that request;
+all model providers reject unknown IDs during conversion. The application then
+resolves accepted IDs back to the original requirement text in the public test
+suite.
+
+When request text does not support a requested functional, negative, or edge
+category, the model may return an explicit `coverage_gaps` entry instead of
+inventing behavior. A category cannot contain both test cases and a gap, and the
+service still rejects missing or unrequested categories. These controls improve
+traceability and safe abstention; the advisory quality gate and human review
+remain necessary because a valid requirement ID does not prove that every claim
+inside a case is supported.
 
 ## Generate test cases
 

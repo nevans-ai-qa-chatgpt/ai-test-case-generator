@@ -92,9 +92,7 @@ def make_model_suite() -> ModelTestSuite:
                         expected_result="A time-limited link is sent.",
                     )
                 ],
-                source_requirements=[
-                    "A reset link expires after a limited time."
-                ],
+                source_requirement_ids=["AC-001"],
             )
         ],
     )
@@ -146,6 +144,23 @@ def test_missing_parsed_output_is_a_provider_error() -> None:
     )
 
     with pytest.raises(ProviderError, match="did not contain"):
+        provider.generate(make_request())
+
+
+def test_unknown_requirement_id_is_a_provider_error() -> None:
+    model_suite = make_model_suite()
+    unknown_case = model_suite.test_cases[0].model_copy(
+        update={"source_requirement_ids": ["AC-999"]}
+    )
+    response = SimpleNamespace(
+        output_parsed=model_suite.model_copy(update={"test_cases": [unknown_case]}),
+        usage=None,
+    )
+    provider = OpenAITestCaseProvider(
+        client=MockClient(RecordingResponses(response))
+    )
+
+    with pytest.raises(ProviderError, match="unknown requirement ID"):
         provider.generate(make_request())
 
 

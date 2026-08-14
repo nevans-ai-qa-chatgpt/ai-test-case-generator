@@ -5,6 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from ai_test_case_generator.models import (
+    CoverageGap,
     MAX_STEPS_PER_CASE,
     MAX_TEST_CASES,
     Priority,
@@ -109,6 +110,51 @@ def test_valid_suite_serializes_to_json_compatible_data() -> None:
     assert result["schema_version"] == "1.0"
     assert result["test_cases"][0]["category"] == "functional"
     assert result["test_cases"][0]["steps"][0]["number"] == 1
+    assert result["coverage_gaps"] == []
+
+
+def test_suite_can_contain_only_an_explicit_coverage_gap() -> None:
+    suite = SuiteModel(
+        source_story_id="US-001",
+        coverage_gaps=[
+            CoverageGap(
+                category=Category.EDGE,
+                reason="No boundary behavior is specified.",
+            )
+        ],
+    )
+
+    assert suite.test_cases == []
+
+
+def test_suite_requires_a_case_or_coverage_gap() -> None:
+    with pytest.raises(ValidationError, match="test case or coverage gap"):
+        SuiteModel(source_story_id="US-001")
+
+
+def test_suite_rejects_a_case_and_gap_for_the_same_category() -> None:
+    with pytest.raises(ValidationError, match="both test cases and a coverage gap"):
+        SuiteModel(
+            source_story_id="US-001",
+            test_cases=[make_test_case()],
+            coverage_gaps=[
+                CoverageGap(
+                    category=Category.FUNCTIONAL,
+                    reason="No supported behavior.",
+                )
+            ],
+        )
+
+
+def test_suite_rejects_duplicate_coverage_gap_categories() -> None:
+    with pytest.raises(ValidationError, match="coverage gap categories must be unique"):
+        SuiteModel(
+            source_story_id="US-001",
+            coverage_gaps=[
+                CoverageGap(category=Category.EDGE, reason="No boundary specified."),
+                CoverageGap(category=Category.EDGE, reason="No state specified."),
+            ],
+        )
 
 
 def test_documented_example_matches_the_domain_contract() -> None:

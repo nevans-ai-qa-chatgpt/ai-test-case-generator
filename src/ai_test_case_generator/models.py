@@ -87,16 +87,41 @@ class TestCase(StrictModel):
         return self
 
 
+class CoverageGap(StrictModel):
+    """A requested category that lacks enough source evidence for a test."""
+
+    category: TestCategory
+    reason: str = Field(min_length=1)
+
+
 class TestSuite(StrictModel):
     """A versioned collection of generated test cases for one user story."""
 
     schema_version: str = Field(default="1.0", pattern=r"^1\.0$")
     source_story_id: str = Field(min_length=1)
-    test_cases: list[TestCase] = Field(min_length=1, max_length=MAX_TEST_CASES)
+    test_cases: list[TestCase] = Field(
+        default_factory=list,
+        max_length=MAX_TEST_CASES,
+    )
+    coverage_gaps: list[CoverageGap] = Field(default_factory=list)
 
     @model_validator(mode="after")
-    def test_case_ids_are_unique(self) -> Self:
+    def cases_and_gaps_are_consistent(self) -> Self:
+        if not self.test_cases and not self.coverage_gaps:
+            raise ValueError("a suite must contain a test case or coverage gap")
+
         ids = [test_case.id for test_case in self.test_cases]
         if len(ids) != len(set(ids)):
             raise ValueError("test case IDs must be unique")
+
+        gap_categories = [gap.category for gap in self.coverage_gaps]
+        if len(gap_categories) != len(set(gap_categories)):
+            raise ValueError("coverage gap categories must be unique")
+
+        case_categories = {test_case.category for test_case in self.test_cases}
+        overlap = case_categories & set(gap_categories)
+        if overlap:
+            raise ValueError(
+                "a category cannot have both test cases and a coverage gap"
+            )
         return self

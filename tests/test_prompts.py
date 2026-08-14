@@ -7,7 +7,7 @@ from ai_test_case_generator.prompts import (
 
 
 def test_prompt_version_changes_when_generation_instructions_change() -> None:
-    assert PROMPT_VERSION == "1.6"
+    assert PROMPT_VERSION == "1.7"
 
 
 def test_system_prompt_contains_measured_quality_guards() -> None:
@@ -25,8 +25,9 @@ def test_system_prompt_contains_measured_quality_guards() -> None:
     assert "application assigns display numbers" in normalized_prompt
     assert "do not authorize new product behavior" in normalized_prompt
     assert "Never cite prompt instructions" in normalized_prompt
-    assert "Cite every authoritative requirement" in normalized_prompt
-    assert "Never return a blank source_requirements entry" in normalized_prompt
+    assert "cite every authoritative requirement" in normalized_prompt
+    assert "source_requirement_ids" in normalized_prompt
+    assert "one coverage gap" in normalized_prompt
 
 
 def test_user_prompt_identifies_the_version_and_preserves_request_data() -> None:
@@ -40,11 +41,12 @@ def test_user_prompt_identifies_the_version_and_preserves_request_data() -> None
 
     prompt = build_user_prompt(request)
 
-    assert "Prompt version: 1.6" in prompt
+    assert "Prompt version: 1.7" in prompt
     assert '"id": "US-001"' in prompt
     assert "completion checks" in prompt
     assert "does not mean an unregistered address receives a link" in prompt
     assert "Invalid input is negative" in prompt
     assert "at most 6 cases" in prompt
     assert "including text labeled 'e.g.'" in prompt
-    assert "copied exactly from the request" in prompt
+    assert '"id": "NARRATIVE"' in prompt
+    assert "selected from authoritative_requirements" in prompt
