@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "evaluation_id": "EVAL-001",
+  "source_story_id": "US-EVAL-001",
+  "status": "completed",
+  "started_at": "2026-08-14T02:14:45.475983Z",
+  "finished_at": "2026-08-14T02:19:17.793727Z",
+  "duration_seconds": 272.31773290000274,
+  "token_usage": {
+    "input_tokens": 1398,
+    "output_tokens": 1504,
+    "total_tokens": 2902
+  },
+  "quality_findings_count": 7,
+  "error_type": null,
+  "error_message": null
+}

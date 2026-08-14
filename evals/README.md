@@ -222,8 +222,34 @@ requested category.
 
 These are deterministic containment controls. They do not prove that the steps
 of a case are semantically supported by its cited requirement. No v1.7 model
-canary has been run yet; use a new run directory so earlier evidence remains
-unchanged.
+canary had been run when the contract was introduced; new runs use a separate
+directory so earlier evidence remains unchanged.
+
+The Qwen v1.7 `EVAL-001` canary completed in 272.3 seconds using 1,398 input
+tokens and 1,504 output tokens. It passed schema, ID conversion, category, and
+traceability validation. Compared with Qwen v1.5, runtime decreased from 310.0
+seconds and deterministic findings decreased from 9 to 7. The model cited only
+valid IDs, which the application resolved to all four authoritative criteria.
+
+Manual review still fails the grounding bar:
+
+- No coverage gaps were returned. All three requested categories have some
+  source support, but the model added unsupported cases within those categories.
+- TC-001 assumes a `Forgot Password` interface, confirmation behavior, and a
+  delivery interval that confuses link validity with delivery time.
+- TC-002 invents exact confirmation wording.
+- TC-003 assumes password-reset navigation and error wording.
+- TC-004 invents an eight-character composition policy and example passwords,
+  directly violating the independent review rubric.
+- TC-005 invents clock times and a 31-minute value; reusing a link after first
+  opening it also confounds expiration with the single-use rule.
+- TC-006 invents empty-email validation and attaches it to the unrelated
+  unregistered-email requirement.
+
+Requirement IDs therefore prevent blank or fabricated traceability values, but
+they do not establish semantic entailment between a citation and generated
+steps. Keep the full dataset paused. The next containment experiment should
+bound the request-specific case plan instead of adding more prompt wording.
 
 ## Review rubric
 

@@ -1,0 +1,178 @@
+{
+  "schema_version": "1.0",
+  "source_story_id": "US-EVAL-001",
+  "test_cases": [
+    {
+      "id": "TC-001",
+      "title": "Registered user receives valid reset link within 30 minutes",
+      "category": "functional",
+      "priority": "high",
+      "objective": "Verify that a registered user receives a valid reset link within 30 minutes of requesting it.",
+      "preconditions": [
+        "The user is registered and has a valid email address associated with their account."
+      ],
+      "steps": [
+        {
+          "number": 1,
+          "action": "User clicks the 'Forgot Password' link on the login page.",
+          "expected_result": "The system displays a form to enter the email address associated with the account."
+        },
+        {
+          "number": 2,
+          "action": "User enters their registered email address and submits the form.",
+          "expected_result": "The system sends a reset link to the email address, and the user sees a confirmation message indicating the link has been sent."
+        },
+        {
+          "number": 3,
+          "action": "The user checks their email within 30 minutes of submission.",
+          "expected_result": "The user receives a reset link in their inbox, valid for 30 minutes, and visible in the email body."
+        }
+      ],
+      "source_requirements": [
+        "A registered user receives a reset link that is valid for 30 minutes."
+      ],
+      "tags": []
+    },
+    {
+      "id": "TC-002",
+      "title": "Unregistered email receives visible confirmation but no reset link",
+      "category": "negative",
+      "priority": "high",
+      "objective": "Verify that an unregistered email address does not receive a reset link, even if it appears to trigger a confirmation.",
+      "preconditions": [
+        "The email address entered is not registered in the system.",
+        "The system has no record of the email address."
+      ],
+      "steps": [
+        {
+          "number": 1,
+          "action": "User clicks the 'Forgot Password' link on the login page.",
+          "expected_result": "The system displays a form to enter the email address associated with the account."
+        },
+        {
+          "number": 2,
+          "action": "User enters an unregistered email address and submits the form.",
+          "expected_result": "The system shows a visible confirmation message (e.g., 'We have sent a reset link to your email') but does not send an actual reset link."
+        },
+        {
+          "number": 3,
+          "action": "The user checks their email after submission.",
+          "expected_result": "No reset link is found in the inbox, confirming no email was sent."
+        }
+      ],
+      "source_requirements": [
+        "An unregistered email address receives the same visible confirmation, but no reset email is sent."
+      ],
+      "tags": []
+    },
+    {
+      "id": "TC-003",
+      "title": "Reset link is used only once and becomes invalid after use",
+      "category": "edge",
+      "priority": "medium",
+      "objective": "Verify that a reset link is used only once and becomes invalid after use.",
+      "preconditions": [
+        "A registered user has successfully received a reset link via email.",
+        "The user has not yet used the link to change their password."
+      ],
+      "steps": [
+        {
+          "number": 1,
+          "action": "User opens the reset link in their email and navigates to the password reset page.",
+          "expected_result": "The system allows the user to enter a new password and confirms the reset is complete."
+        },
+        {
+          "number": 2,
+          "action": "The user attempts to use the same reset link again, either by re-opening the email or by navigating to the reset page with the same link.",
+          "expected_result": "The system rejects the request and displays an error message indicating the link has already been used."
+        }
+      ],
+      "source_requirements": [
+        "A reset link can be used only once."
+      ],
+      "tags": []
+    },
+    {
+      "id": "TC-004",
+      "title": "New password must satisfy configured password policy",
+      "category": "functional",
+      "priority": "high",
+      "objective": "Verify that the new password meets the configured password policy when resetting.",
+      "preconditions": [
+        "A registered user has received a reset link.",
+        "The password policy requires at least 8 characters, one uppercase, one lowercase, and one number."
+      ],
+      "steps": [
+        {
+          "number": 1,
+          "action": "User opens the reset link and enters a new password that meets the configured password policy (e.g., 'Pass1234').",
+          "expected_result": "The system accepts the password and allows the user to complete the reset process."
+        },
+        {
+          "number": 2,
+          "action": "User attempts to enter a password that does not meet the policy (e.g., 'pass').",
+          "expected_result": "The system rejects the password and displays an error message indicating the password does not meet the policy."
+        }
+      ],
+      "source_requirements": [
+        "The new password must satisfy the configured password policy."
+      ],
+      "tags": []
+    },
+    {
+      "id": "TC-005",
+      "title": "Reset link expires after 30 minutes of being sent",
+      "category": "edge",
+      "priority": "medium",
+      "objective": "Verify that the reset link expires after 30 minutes of being sent.",
+      "preconditions": [
+        "A registered user has successfully received a reset link.",
+        "The system sends the link at a known time (e.g., 10:00 AM)."
+      ],
+      "steps": [
+        {
+          "number": 1,
+          "action": "User receives the reset link at 10:00 AM and immediately opens it to begin the password reset.",
+          "expected_result": "The system allows the user to enter a new password and completes the reset."
+        },
+        {
+          "number": 2,
+          "action": "User attempts to use the same link at 10:31 AM, after 30 minutes have passed.",
+          "expected_result": "The system rejects the link and displays an error message indicating it has expired."
+        }
+      ],
+      "source_requirements": [
+        "A registered user receives a reset link that is valid for 30 minutes."
+      ],
+      "tags": []
+    },
+    {
+      "id": "TC-006",
+      "title": "Invalid input (empty email) results in visible error",
+      "category": "negative",
+      "priority": "medium",
+      "objective": "Verify that invalid input (e.g., empty email) results in a rejection with a visible error.",
+      "preconditions": [
+        "The user is attempting to request a password reset.",
+        "The email field is required and cannot be left blank."
+      ],
+      "steps": [
+        {
+          "number": 1,
+          "action": "User clicks the 'Forgot Password' link and enters an empty email field.",
+          "expected_result": "The system displays a visible error message indicating the email field is required."
+        },
+        {
+          "number": 2,
+          "action": "User attempts to submit the form without entering any email.",
+          "expected_result": "The form does not proceed, and the user sees a validation error message."
+        }
+      ],
+      "source_requirements": [
+        "An unregistered email address receives the same visible confirmation, but no reset email is sent."
+      ],
+      "tags": []
+    }
+  ],
+  "coverage_gaps": []
+}

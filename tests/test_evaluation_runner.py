@@ -421,3 +421,49 @@ def test_recorded_grounded_gemma_canary_preserves_contract_failure() -> None:
         if test_case["id"] == "TC-006"
     )
     assert tc_006["source_requirements"] == [""]
+
+
+def test_recorded_requirement_id_qwen_canary_matches_the_run_contract() -> None:
+    run_dir = (
+        Path(__file__).parents[1]
+        / "evals"
+        / "runs"
+        / "qwen3-4b-prompt-v1.7"
+    )
+
+    manifest = EvaluationRunManifest.model_validate_json(
+        (run_dir / "run.json").read_text(encoding="utf-8")
+    )
+    case_dir = run_dir / "cases" / "EVAL-001"
+    result = EvaluationCaseResult.model_validate_json(
+        (case_dir / "result.json").read_text(encoding="utf-8")
+    )
+    suite = SuiteModel.model_validate_json(
+        (case_dir / "suite.json").read_text(encoding="utf-8")
+    )
+    quality_data = json.loads(
+        (case_dir / "quality.json").read_text(encoding="utf-8")
+    )
+    authoritative = {
+        "A registered user receives a reset link that is valid for 30 minutes.",
+        "An unregistered email address receives the same visible confirmation, but no reset email is sent.",
+        "A reset link can be used only once.",
+        "The new password must satisfy the configured password policy.",
+    }
+    cited = {
+        requirement
+        for test_case in suite.test_cases
+        for requirement in test_case.source_requirements
+    }
+
+    assert manifest.provider == "ollama"
+    assert manifest.model == "qwen3:4b-instruct"
+    assert manifest.prompt_version == "1.7"
+    assert manifest.provider_parameters["temperature"] == 0
+    assert manifest.provider_parameters["timeout_seconds"] == 600.0
+    assert result.status == "completed"
+    assert result.token_usage is not None
+    assert result.token_usage.total_tokens == 2902
+    assert result.quality_findings_count == len(quality_data["findings"]) == 7
+    assert suite.coverage_gaps == []
+    assert cited == authoritative
